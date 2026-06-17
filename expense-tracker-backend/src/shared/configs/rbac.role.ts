@@ -1,3 +1,3 @@
-import { GroupRole } from "../../../generated/prisma/enums";
+import { GroupRole } from "../../../generated/prisma";
 
 export { GroupRole }

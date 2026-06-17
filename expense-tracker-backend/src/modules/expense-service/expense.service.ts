@@ -4,7 +4,7 @@ import { ExpenseFilter, getExpenseDateRange } from "../../shared/util/expenses.u
 import { CreateExpenseInputs } from "./expenses.validation.js";
 
 export async function createExpenses(data: CreateExpenseInputs, userId: string) {
-    return await prisma.$transaction(async (tx) => {
+    return await prisma.$transaction(async (tx:any) => {
         if (data.groupId) {
             const member = await tx.groupMembers.findFirst({
                 where: {
@@ -70,7 +70,7 @@ export async function viewAllExpenses(userId: string) {
 }
 
 export async function ViewExpenseById(expenseId: string, userId: string) {
-    return await prisma.$transaction(async (tx) => {
+    return await prisma.$transaction(async (tx:any) => {
         const expense = await tx.expenses.findUnique({
             where: {
                 id: expenseId
@@ -107,7 +107,7 @@ export async function ViewExpenseById(expenseId: string, userId: string) {
 }
 
 export async function updateExpenses(expenseId: string, data: CreateExpenseInputs, userId: string) {
-    return await prisma.$transaction(async (tx) => {
+    return await prisma.$transaction(async (tx:any) => {
         const expense = await tx.expenses.findUnique({
             where: {
                 id: expenseId
@@ -147,7 +147,7 @@ export async function updateExpenses(expenseId: string, data: CreateExpenseInput
 }
 
 export async function deleteExpense(expenseId: string, userId: string) {
-    return await prisma.$transaction(async (tx) => {
+    return await prisma.$transaction(async (tx:any) => {
         const expense = await tx.expenses.findUnique({
             where: {
                 id: expenseId
@@ -185,7 +185,7 @@ export async function deleteExpense(expenseId: string, userId: string) {
 export async function getExpensesByFilter(userId: string, filters: ExpenseFilter, groupId?: string) {
     const { startDate, endDate } = getExpenseDateRange(filters)
 
-    return await prisma.$transaction(async (tx) => {
+    return await prisma.$transaction(async (tx:any) => {
         if (groupId) {
             const members = await tx.groupMembers.findFirst({
                 where: {

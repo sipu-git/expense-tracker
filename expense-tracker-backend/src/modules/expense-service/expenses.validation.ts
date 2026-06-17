@@ -1,5 +1,5 @@
 import z from "zod";
-import { ExpenseType } from "../../../generated/prisma/enums";
+import { ExpenseType } from "../../../generated/prisma";
 
 export const createExpenseSchema = z.object({
     name: z.string().min(3, "Expense name must be at least 3 characters long"),

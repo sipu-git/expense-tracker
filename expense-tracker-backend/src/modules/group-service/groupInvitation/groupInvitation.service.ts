@@ -5,7 +5,7 @@ import { createGroupInviteInput } from "../group.validation.js";
 export async function sendInvites(groupId: string, senderId: string, infos: createGroupInviteInput) {
     const { userId, email } = infos;
 
-    return await prisma.$transaction(async (tx) => {
+    return await prisma.$transaction(async (tx:any) => {
         const membership = await tx.groupMembers.findUnique({
             where: {
                 userId_groupId: {
@@ -127,7 +127,7 @@ export async function viewInvitationById(invite_id: string) {
 }
 
 export async function acceptInvitation(token: string, userId: string) {
-    return await prisma.$transaction(async (tx) => {
+    return await prisma.$transaction(async (tx:any) => {
         const invite = await tx.groupInvite.findUnique({
             where: { token: token }
         })

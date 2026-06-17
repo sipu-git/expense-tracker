@@ -5,7 +5,7 @@ import jwt from "jsonwebtoken";
 
 export async function createUser(data: CreateUserInput) {
     const { full_name, email, phone, password } = data;
-    return await prisma.$transaction(async (prisma) => {
+    return await prisma.$transaction(async (prisma:any) => {
         const existingUser = await prisma.user.findUnique({
             where: { email },
         });
@@ -43,7 +43,7 @@ export async function loginUser(email: string, password: string) {
 }
 
 export async function getUserById(id: string) {
-    return await prisma.$transaction(async (prisma) => {
+    return await prisma.$transaction(async (prisma:any) => {
         const user = await prisma.user.findUnique({
             where: { id },
         });
@@ -68,7 +68,7 @@ export async function signedOutuser(userId: string) {
 
 
 export async function modifyProfile(userId: string, payload: ModifyUserInput) {
-    return await prisma.$transaction(async (prisma) => {
+    return await prisma.$transaction(async (prisma:any) => {
         const user = await prisma.user.findUnique({
             where: { id: userId },
         });

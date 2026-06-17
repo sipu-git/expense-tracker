@@ -5,7 +5,7 @@ import { createGroupInput } from "../group.validation.js";
 export async function createGroup(data: createGroupInput, creatorId: string) {
     const { name, description } = data
 
-    return await prisma.$transaction(async (orm) => {
+    return await prisma.$transaction(async (orm:any) => {
 
         const creator = await orm.user.findUnique({
             where: { id: creatorId },
@@ -63,7 +63,7 @@ export async function createGroup(data: createGroupInput, creatorId: string) {
 
 
 export async function viewGroups(userId: string) {
-    return await prisma.$transaction(async (tx) => {
+    return await prisma.$transaction(async (tx:any) => {
         const responses = await tx.group.findMany({
             where: {
                 OR: [
@@ -95,7 +95,7 @@ export async function viewGroups(userId: string) {
 
 
 export async function viewGroupById(groupId: string, userId: string) {
-    return await prisma.$transaction(async (orm) => {
+    return await prisma.$transaction(async (orm:any) => {
         const membership = await orm.groupMembers.findUnique({
             where: {
                 userId_groupId: { userId, groupId }
