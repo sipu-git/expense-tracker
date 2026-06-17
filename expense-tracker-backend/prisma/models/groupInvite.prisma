@@ -1,0 +1,17 @@
+model GroupInvite {
+  id        String       @id @default(uuid())
+  groupId   String      
+  email     String?
+  token     String       @unique
+  status    InviteStatus @default(PENDING)
+  sendAt    DateTime     @default(now())
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @default(now())
+  senderId  String
+  userId    String?
+  group     Group        @relation(fields: [groupId], references: [id])
+  sender    User         @relation("InviteSender", fields: [senderId], references: [id])
+  receiver  User?        @relation("InviteReceiver", fields: [userId], references: [id])
+
+  @@index([groupId])
+}

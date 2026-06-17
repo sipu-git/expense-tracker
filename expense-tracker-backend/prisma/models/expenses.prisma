@@ -1,0 +1,17 @@
+model Expenses {
+  id         String      @id @default(uuid())
+  name       String
+  amount     Decimal
+  quantity   String
+  bought_at  DateTime
+  type       ExpenseType
+  created_by String
+  groupId    String?
+  created_at DateTime    @default(now())
+  updated_at DateTime    @updatedAt
+  creator    User        @relation(fields: [created_by], references: [id], onDelete: Cascade)
+  group      Group?      @relation(fields: [groupId], references: [id], onDelete: Cascade)
+
+  @@index([created_by, bought_at])
+  @@index([groupId])
+}

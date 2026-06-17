@@ -1,0 +1,17 @@
+model User {
+  id         String         @id @default(uuid())
+  full_name  String
+  email      String         @unique
+  phone      String
+  password   String
+  created_at DateTime       @default(now())
+  updated_at DateTime       @updatedAt
+  role       GroupRole?      @default(MEMBER)
+  expenses   Expenses[]
+  groups     Group[]
+  sender     GroupInvite[]  @relation("InviteSender")
+  receiver   GroupInvite[]  @relation("InviteReceiver")
+  members    GroupMembers[]
+
+  @@index([email])
+}

@@ -1,0 +1,12 @@
+model Group {
+  id          String         @id @default(uuid())
+  name        String
+  created_by  String
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @default(now())
+  description String?
+  creator     User           @relation(fields: [created_by], references: [id])
+  invite      GroupInvite[]
+  members     GroupMembers[]
+  expenses    Expenses[]
+}
