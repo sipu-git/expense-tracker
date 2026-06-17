@@ -1,5 +1,5 @@
-import { prisma } from "../../../lib/prisma";
-import { CreateUserInput, ModifyUserInput } from "./user.validation";
+import { prisma } from "../../../lib/prisma.js";
+import { CreateUserInput, ModifyUserInput } from "./user.validation.js";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 

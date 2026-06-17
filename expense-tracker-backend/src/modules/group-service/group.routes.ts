@@ -1,12 +1,12 @@
 import express from 'express';
-import { authMiddleware } from '../../shared/middlewares/auth.middleware';
-import { accessRole } from '../../shared/middlewares/rbac.middileware';
-import { GroupRole } from '../../shared/configs/rbac.role';
-import { validate } from '../../shared/middlewares/validate.middileware';
-import { createGroupSchema } from './group.validation';
-import { buildGroup, fetchAllGroups, fetchOwnGroup, updateGroup, viewGroup } from './goupCreation/groupCreation.controller';
-import { declineInvitation, fetchAllInvitations, findMembers, forwardInvitation, receiveInvitation, viewInvitation } from './groupInvitation/groupInvitation.controller';
-import { asyncHandler } from '../../shared/middlewares/asyncHandler.middleware';
+import { authMiddleware } from '../../shared/middlewares/auth.middleware.js';
+import { accessRole } from '../../shared/middlewares/rbac.middileware.js';
+import { GroupRole } from '../../shared/configs/rbac.role.js';
+import { validate } from '../../shared/middlewares/validate.middileware.js';
+import { createGroupSchema } from './group.validation.js';
+import { buildGroup, fetchAllGroups, fetchOwnGroup, updateGroup, viewGroup } from './goupCreation/groupCreation.controller.js';
+import { declineInvitation, fetchAllInvitations, findMembers, forwardInvitation, receiveInvitation, viewInvitation } from './groupInvitation/groupInvitation.controller.js';
+import { asyncHandler } from '../../shared/middlewares/asyncHandler.middleware.js';
 
 const router = express.Router()
 

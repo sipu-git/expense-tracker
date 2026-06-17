@@ -1,6 +1,6 @@
 import express from 'express'
-import { resetPasswordWithOtpController, sendForgotOtp, verifyForgotPasswordOtpController } from './auth.controller';
-import { resetTokenMiddleware } from '../../shared/middlewares/resetToken.middleware';
+import { resetPasswordWithOtpController, sendForgotOtp, verifyForgotPasswordOtpController } from './auth.controller.js';
+import { resetTokenMiddleware } from '../../shared/middlewares/resetToken.middleware.js';
 
 const router = express.Router()
 

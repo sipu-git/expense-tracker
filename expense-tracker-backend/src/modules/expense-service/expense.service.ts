@@ -1,7 +1,7 @@
-import { prisma } from "../../../lib/prisma";
-import { GroupRole } from "../../shared/configs/rbac.role";
-import { ExpenseFilter, getExpenseDateRange } from "../../shared/util/expenses.util";
-import { CreateExpenseInputs } from "./expenses.validation";
+import { prisma } from "../../../lib/prisma.js";
+import { GroupRole } from "../../shared/configs/rbac.role.js";
+import { ExpenseFilter, getExpenseDateRange } from "../../shared/util/expenses.util.js";
+import { CreateExpenseInputs } from "./expenses.validation.js";
 
 export async function createExpenses(data: CreateExpenseInputs, userId: string) {
     return await prisma.$transaction(async (tx) => {

@@ -1,4 +1,4 @@
-import redis from "../../../shared/configs/redis";
+import redis from "../../../shared/configs/redis.js";
 
 const otp_expiry = 600;
 const otp_rate_limit = 300;

@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
-import { createExpenseSchema, expenseFilterSchema } from "./expenses.validation";
-import { createExpenses, deleteExpense, getExpensesByFilter, updateExpenses, viewAllExpenses, ViewExpenseById } from "./expense.service";
-import { errorResponse, successResponse } from "../../shared/util/ApiResponses";
+import { createExpenseSchema, expenseFilterSchema } from "./expenses.validation.js";
+import { createExpenses, deleteExpense, getExpensesByFilter, updateExpenses, viewAllExpenses, ViewExpenseById } from "./expense.service.js";
+import { errorResponse, successResponse } from "../../shared/util/ApiResponses.js";
 
 export const addExpense = async (req: Request, res: Response) => {
     const userId = req.user?.id;

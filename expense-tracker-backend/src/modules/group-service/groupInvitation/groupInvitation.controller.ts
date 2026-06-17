@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
-import { errorResponse, successResponse } from "../../../shared/util/ApiResponses";
-import { createGroupInviteSchema } from "../group.validation";
-import { acceptInvitation, rejectInvitation, searchMember, sendInvites, viewAllInvitations, viewInvitationById } from "./groupInvitation.service";
+import { errorResponse, successResponse } from "../../../shared/util/ApiResponses.js";
+import { createGroupInviteSchema } from "../group.validation.js";
+import { acceptInvitation, rejectInvitation, searchMember, sendInvites, viewAllInvitations, viewInvitationById } from "./groupInvitation.service.js";
 
 export const forwardInvitation = async (req: Request, res: Response) => {
     const groupId = req.params.groupId.toString()

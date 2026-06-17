@@ -1,5 +1,5 @@
-import { MemberAction } from "./rbac.actions";
-import { GroupRole } from "./rbac.role";
+import { MemberAction } from "./rbac.actions.js";
+import { GroupRole } from "./rbac.role.js";
 
 export const RBAC_PERIMISSION:Record<MemberAction,Record<GroupRole,GroupRole[]>>={
  create:{

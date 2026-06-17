@@ -1,6 +1,6 @@
-import { prisma } from "../../../../lib/prisma";
-import { GroupRole } from "../../../shared/configs/rbac.role";
-import { createGroupInviteInput } from "../group.validation";
+import { prisma } from "../../../../lib/prisma.js";
+import { GroupRole } from "../../../shared/configs/rbac.role.js";
+import { createGroupInviteInput } from "../group.validation.js";
 
 export async function sendInvites(groupId: string, senderId: string, infos: createGroupInviteInput) {
     const { userId, email } = infos;

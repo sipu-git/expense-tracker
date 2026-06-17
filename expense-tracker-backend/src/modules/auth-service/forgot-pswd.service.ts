@@ -1,7 +1,7 @@
-import { prisma } from "../../../lib/prisma";
-import { generateOTP } from "./auth.util";
-import { sendOtpEmail } from "../../shared/configs/nodemailer.config";
-import { checkRateLimit, resetRateLimit, storeOtp, verfiyOtp } from "./redis/redis.util";
+import { prisma } from "../../../lib/prisma.js";
+import { generateOTP } from "./auth.util.js";
+import { sendOtpEmail } from "../../shared/configs/nodemailer.config.js";
+import { checkRateLimit, resetRateLimit, storeOtp, verfiyOtp } from "./redis/redis.util.js";
 import jwt from 'jsonwebtoken';
 
 export async function sendForGotPasswordOtp(email: string): Promise<string> {

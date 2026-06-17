@@ -1,8 +1,8 @@
 import { Request, Response } from "express";
-import { ChangePasswordRequestSchema, ResetPasswordSchema, VerifyChangePasswordOtpSchema } from "./auth.validation";
-import { sendForGotPasswordOtp, verifyForgotPasswordOtp } from "./forgot-pswd.service";
-import { errorResponse, successResponse } from "../../shared/util/ApiResponses";
-import { resetPasswordWithToken } from "./reset-pswd.service";
+import { ChangePasswordRequestSchema, ResetPasswordSchema, VerifyChangePasswordOtpSchema } from "./auth.validation.js";
+import { sendForGotPasswordOtp, verifyForgotPasswordOtp } from "./forgot-pswd.service.js";
+import { errorResponse, successResponse } from "../../shared/util/ApiResponses.js";
+import { resetPasswordWithToken } from "./reset-pswd.service.js";
 
 export const sendForgotOtp = async (req: Request, res: Response) => {
     const parsed = ChangePasswordRequestSchema.safeParse(req.body)

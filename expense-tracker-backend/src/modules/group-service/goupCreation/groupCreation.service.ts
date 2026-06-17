@@ -1,6 +1,6 @@
-import { prisma } from "../../../../lib/prisma";
-import { GroupRole } from "../../../shared/configs/rbac.role";
-import { createGroupInput } from "../group.validation";
+import { prisma } from "../../../../lib/prisma.js";
+import { GroupRole } from "../../../shared/configs/rbac.role.js";
+import { createGroupInput } from "../group.validation.js";
 
 export async function createGroup(data: createGroupInput, creatorId: string) {
     const { name, description } = data

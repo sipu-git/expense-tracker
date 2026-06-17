@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from "express";
-import { prisma } from "../../../lib/prisma";
-import { GroupRole } from "../configs/rbac.role";
+import { prisma } from "../../../lib/prisma.js";
+import { GroupRole } from "../configs/rbac.role.js";
 
 declare global {
   namespace Express {

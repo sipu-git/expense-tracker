@@ -1,9 +1,9 @@
 import express from 'express'
-import { authMiddleware } from '../../shared/middlewares/auth.middleware'
-import { validate } from '../../shared/middlewares/validate.middileware'
-import { createExpenseSchema } from './expenses.validation'
-import { asyncHandler } from '../../shared/middlewares/asyncHandler.middleware'
-import { addExpense, fetchAllExpenses, fetchExpenseById, fetchExpensesByFilter, modifyExpenses, removeExpense } from './expenses.controller'
+import { authMiddleware } from '../../shared/middlewares/auth.middleware.js'
+import { validate } from '../../shared/middlewares/validate.middileware.js'
+import { createExpenseSchema } from './expenses.validation.js'
+import { asyncHandler } from '../../shared/middlewares/asyncHandler.middleware.js'
+import { addExpense, fetchAllExpenses, fetchExpenseById, fetchExpensesByFilter, modifyExpenses, removeExpense } from './expenses.controller.js'
 
 const router = express.Router()
 

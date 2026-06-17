@@ -1,9 +1,9 @@
 import express from "express";
-import { registerUser, signInUser, getUserProfile, logOutUser, updateProfile } from "./user.controller";
-import { validate } from "../../shared/middlewares/validate.middileware";
-import { asyncHandler } from "../../shared/middlewares/asyncHandler.middleware";
-import { userSchema } from "./user.validation";
-import { authMiddleware } from "../../shared/middlewares/auth.middleware";
+import { registerUser, signInUser, getUserProfile, logOutUser, updateProfile } from "./user.controller.js";
+import { validate } from "../../shared/middlewares/validate.middileware.js";
+import { asyncHandler } from "../../shared/middlewares/asyncHandler.middleware.js";
+import { userSchema } from "./user.validation.js";
+import { authMiddleware } from "../../shared/middlewares/auth.middleware.js";
 
 const router = express.Router();
 

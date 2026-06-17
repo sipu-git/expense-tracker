@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
-import { createGroupSchema } from "../group.validation";
-import { createGroup, exitOfGroup, modifyGroup, viewGroupById, viewGroups, viewOwnGroup } from "./groupCreation.service";
-import { errorResponse, successResponse } from "../../../shared/util/ApiResponses";
+import { createGroupSchema } from "../group.validation.js";
+import { createGroup, exitOfGroup, modifyGroup, viewGroupById, viewGroups, viewOwnGroup } from "./groupCreation.service.js";
+import { errorResponse, successResponse } from "../../../shared/util/ApiResponses.js";
 
 export const buildGroup = async (req: Request, res: Response) => {
     const creatorId = req.user?.id;

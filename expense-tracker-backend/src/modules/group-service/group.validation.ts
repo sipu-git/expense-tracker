@@ -1,5 +1,5 @@
 import z from "zod";
-import { GroupRole } from "../../shared/configs/rbac.role";
+import { GroupRole } from "../../shared/configs/rbac.role.js";
 
 export const createGroupSchema = z.object({
     name: z.string().min(3, "Group name must be at least 3 characters")

@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
-import { createUser, getUserById, loginUser, modifyProfile, signedOutuser } from "./user.service";
-import { errorResponse, successResponse } from "../../shared/util/ApiResponses";
-import { modifyUserSchema } from "./user.validation";
+import { createUser, getUserById, loginUser, modifyProfile, signedOutuser } from "./user.service.js";
+import { errorResponse, successResponse } from "../../shared/util/ApiResponses.js";
+import { modifyUserSchema } from "./user.validation.js";
 
 export const registerUser = async (req: Request, res: Response) => {
         const { full_name, email, phone, password } = req.body;
