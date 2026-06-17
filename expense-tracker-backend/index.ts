@@ -1,10 +1,10 @@
 import exxpress from "express";
 import dotenv from "dotenv";
 import cors from "cors";
-import userRoutes from "./src/modules/user-service/user.routes";
-import groupRoutes from "./src/modules/group-service/group.routes";
-import expenseRoutes from "./src/modules/expense-service/expenses.routes";
-import authRoutes from './src/modules/auth-service/auth.routes';
+import userRoutes from "./src/modules/user-service/user.routes.js";
+import groupRoutes from "./src/modules/group-service/group.routes.js";
+import expenseRoutes from "./src/modules/expense-service/expenses.routes.js";
+import authRoutes from './src/modules/auth-service/auth.routes.js';
 
 import cookiesParser from "cookie-parser";
 const app = exxpress();
