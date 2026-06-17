@@ -131,7 +131,7 @@ export default function Settings() {
                   window.location.reload();
                 }
               }}
-              className="text-xs font-semibold text-red-500 hover:underline"
+              className="text-xs font-semibold text-red-600 hover:underline"
             >
               Delete All
             </button>
