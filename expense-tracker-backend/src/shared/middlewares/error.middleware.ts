@@ -1,6 +1,6 @@
 import type { Request, Response, NextFunction } from "express"
 import { ZodError } from "zod";
-import { AppError } from "../lib/ApiError";
+import { AppError } from "../../../lib/AppError";
 
 export const globalErrorHandler = (
   err: any,
