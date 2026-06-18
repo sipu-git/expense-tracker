@@ -5,21 +5,24 @@ const redisUrl = process.env.REDIS_URL;
 if (!redisUrl) {
     throw new Error("Redis url isn't defined in .env")
 }
+const isProduction = process.env.NODE_ENV === "production";
+
 const redis = createClient({
     url: redisUrl,
     socket: {
+        ...(isProduction && {
+            tls: true as const,
+            rejectUnauthorized: false,
+        }),
         reconnectStrategy: (retries) => {
             console.log(`Redis reconnect attempt: ${retries}`);
-
             if (retries > 10) {
                 return new Error("Redis reconnection failed");
             }
-
             return Math.min(retries * 100, 3000);
         },
     },
 });
-
 redis.on('connect', () => {
     console.log('Connected to Redis successfully!');
 })
