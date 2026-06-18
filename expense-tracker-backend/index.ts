@@ -11,7 +11,7 @@ const app = exxpress();
 app.use(exxpress.json());
 app.use(
     cors({
-        origin: "http://localhost:5173",
+        origin: ["http://localhost:5173","https://expense-tracker-steel-delta-33.vercel.app"],
         credentials: true,
     })
 ); app.use(cookiesParser());
