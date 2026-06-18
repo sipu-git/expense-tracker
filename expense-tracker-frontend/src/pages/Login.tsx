@@ -222,10 +222,10 @@ export default function Login() {
                     )}
                 </button>
 
-                <Divider text="or continue with" />
+                {/* <Divider text="or continue with" /> */}
 
                 {/* Google OAuth placeholder */}
-                <button
+                {/* <button
                     type="button"
                     className="h-11 w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/50 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 text-sm font-medium flex items-center justify-center gap-2.5 transition-all duration-200 active:scale-[0.98]"
                 >
@@ -236,7 +236,7 @@ export default function Login() {
                         <path d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0 5.482 0 2.438 2.017.957 4.961L3.964 7.293C4.672 5.163 6.656 3.58 9 3.58z" fill="#EA4335" />
                     </svg>
                     Continue with Google
-                </button>
+                </button> */}
             </form>
 
             {/* Footer link */}
