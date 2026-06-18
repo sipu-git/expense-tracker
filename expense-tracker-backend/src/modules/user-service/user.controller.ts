@@ -13,10 +13,11 @@ export const registerUser = async (req: Request, res: Response) => {
 export const signInUser = async (req: Request, res: Response) => {
         const { email, password } = req.body;
         const { token, findUser } = await loginUser(email, password);
+        const isProduction = process.env.NODE_ENV === "production";
         res.cookie("token", token, {
                 httpOnly: true,
-                secure: false,
-                sameSite: "lax",
+                secure: isProduction,
+                sameSite: isProduction ? "none" : "lax",
                 maxAge: 15 * 24 * 60 * 60 * 1000, // 15 days
         });
         return res.status(200).json(successResponse("User logged in successfully", findUser));
@@ -28,10 +29,11 @@ export const logOutUser = async (req: Request, res: Response) => {
         }
         const { id } = req.user;
         const result = await signedOutuser(id);
+        const isProduction = process.env.NODE_ENV === "production";
         res.clearCookie("token", {
                 httpOnly: true,
-                secure: false,
-                sameSite: "lax",
+                secure: isProduction,
+                sameSite: isProduction ? "none" : "lax",
         });
         return res.status(200).json(successResponse("User signed out successfully", result));
 }
