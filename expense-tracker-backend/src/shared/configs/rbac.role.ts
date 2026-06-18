@@ -1,3 +1,3 @@
-import { GroupRole } from "../../../generated/prisma";
+import { GroupRole } from "../../../generated/prisma/client.js";
 
-export { GroupRole }
+export {GroupRole}
