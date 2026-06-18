@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const BASE_URL = "http://localhost:3000/api";
+const BASE_URL = "https://expense-tracker-1-6m9p.onrender.com/api";
 
 if (!BASE_URL) {
     console.error("base url configuration issue!")
