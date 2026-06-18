@@ -1,14 +1,14 @@
 import { createClient } from 'redis';
 import "dotenv/config";
 
-const redisURL = process.env.REDIS_URL;
-if (!redisURL) {
+const redisUrl = process.env.REDIS_URL;
+if (!redisUrl) {
     throw new Error("Redis url isn't defined in .env")
 }
 const isProduction = process.env.NODE_ENV === "production";
 
 const redis = createClient({
-    url: redisURL,
+    url: redisUrl,
     socket: {
         ...(isProduction && {
             tls: true as const,
