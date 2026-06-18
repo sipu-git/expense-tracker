@@ -1,15 +1,6 @@
-import nodemailer from 'nodemailer';
+import { Resend } from "resend";
 
-// Email transporter configuration
-const transporter = nodemailer.createTransport({
-  host: "smtp.gmail.com",
-  port: 587,
-  secure: false,
-  auth: {
-    user: process.env.GMAIL_USER,
-    pass: process.env.GMAIL_PASSWORD
-  },
-});
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 interface SendOtpEmailProps {
   email: string;
@@ -17,32 +8,46 @@ interface SendOtpEmailProps {
   type: 'FORGOT_PASSWORD' | 'CHANGE_PASSWORD';
 }
 
-export async function sendOtpEmail({
-  email,
-  otp,
-  type,
-}: SendOtpEmailProps): Promise<boolean> {
+export async function sendOtpEmail({ email, otp, type }: SendOtpEmailProps): Promise<boolean> {
   try {
-    const subject =
-      type === 'FORGOT_PASSWORD'
-        ? 'Password Reset OTP - Expense Tracking System'
-        : 'Change Password OTP - Expense Tracking System';
+    const subject = type === 'FORGOT_PASSWORD'
+      ? 'Password Reset OTP - Expense Tracking System'
+      : 'Change Password OTP - Expense Tracking System';
 
-    const htmlContent = getEmailTemplate(otp, type);
-
-    const mailOptions = {
-      from: process.env.GMAIL_USER,
+    const { error } = await resend.emails.send({
+      from: "onboarding@resend.dev",
       to: email,
-      subject: subject,
-      html: htmlContent,
-    };
+      subject,
+      html: getEmailTemplate(otp, type),
+    });
 
-    await transporter.sendMail(mailOptions);
+    if (error) {
+      console.error('Resend error:', error);
+      throw new Error('Failed to send OTP email');
+    }
+
     console.log(`OTP email sent to ${email}`);
     return true;
   } catch (error) {
     console.error('Error sending OTP email:', error);
     throw new Error('Failed to send OTP email');
+  }
+}
+
+export async function verifyEmailConnection(): Promise<boolean> {
+  try {
+    const { error } = await resend.emails.send({
+      from: "onboarding@resend.dev",
+      to: "delivered@resend.dev",
+      subject: "Connection test",
+      html: "<p>test</p>",
+    });
+    if (error) return false;
+    console.log('Email connection verified successfully');
+    return true;
+  } catch (error) {
+    console.error('Email connection verification failed:', error);
+    return false;
   }
 }
 
@@ -132,48 +137,31 @@ function getEmailTemplate(
           <div class="header">
             <h1>${title}</h1>
           </div>
-
           <div class="content">
             <p>Hello,</p>
             <p>${message}</p>
           </div>
-
           <div class="otp-box">
             <p class="otp-code">${otp}</p>
             <p class="expiry">This OTP will expire in 10 minutes</p>
           </div>
-
           <div class="warning">
             <strong>⚠️ Security Notice:</strong> Never share this OTP with anyone.
             We will never ask you for this code via email or phone.
           </div>
-
           <div class="content">
             <p>
-              If you did not request this ${type === 'FORGOT_PASSWORD' ? 'password reset' : 'password change'
-    },
+              If you did not request this ${type === 'FORGOT_PASSWORD' ? 'password reset' : 'password change'},
               please ignore this email or contact our support team immediately.
             </p>
-            <p>Best regards,<br />HRMS Support Team</p>
+            <p>Best regards,<br />Expense Tracker Support Team</p>
           </div>
-
           <div class="footer">
             <p>This is an automated message. Please do not reply to this email.</p>
-            <p>&copy; 2024 HRMS. All rights reserved.</p>
+            <p>&copy; 2024 Expense Tracker. All rights reserved.</p>
           </div>
         </div>
       </body>
     </html>
   `;
-}
-
-export async function verifyEmailConnection(): Promise<boolean> {
-  try {
-    await transporter.verify();
-    console.log('Email connection verified successfully');
-    return true;
-  } catch (error) {
-    console.error('Email connection verification failed:', error);
-    return false;
-  }
 }
