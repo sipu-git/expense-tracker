@@ -10,10 +10,6 @@ const isProduction = process.env.NODE_ENV === "production";
 const redis = createClient({
     url: redisUrl,
     socket: {
-        ...(isProduction && {
-            tls: true as const,
-            rejectUnauthorized: false,
-        }),
         reconnectStrategy: (retries) => {
             console.log(`Redis reconnect attempt: ${retries}`);
             if (retries > 10) {
