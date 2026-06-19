@@ -8,17 +8,19 @@ import { exportToCSV } from '../utils';
 import { format } from 'date-fns';
 import { cn } from '../utils';
 import { useNavigate } from 'react-router-dom';
+import { removeAll } from '@/store/slices/expensesSlice';
 
 export default function Settings() {
   const dispatch = useAppDispatch();
   const theme = useAppSelector(selectTheme);
-  const expenses = useAppSelector(selectFilteredExpenses);
+  const expense = useAppSelector(selectFilteredExpenses);
   const navigate = useNavigate()
-  const {user}= useAppSelector((state)=>state.user)
+  const { user } = useAppSelector((state) => state.user)
+  const { loading: expenseLoading } = useAppSelector((state) => state.expense)
 
   const handleExport = () => {
     exportToCSV(
-      expenses.map((e) => ({
+      expense.map((e) => ({
         Title: e.title,
         Amount: e.amount,
         Category: e.category,
@@ -29,14 +31,23 @@ export default function Settings() {
       `expenses-${format(new Date(), 'yyyy-MM-dd')}.csv`
     );
   };
+  const initials = user?.full_name
+    ? user.full_name.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2)
+    : 'U';
 
   return (
     <div className="space-y-6 max-w-2xl">
       {/* Profile */}
       <div className="card">
         <div className="flex items-center gap-4 mb-4">
-          <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-accent to-violet-600 flex items-center justify-center text-white font-bold text-xl">
-            A
+          <div className="w-12 h-12 rounded-full bg-green-100 dark:bg-green-100/5 dark:bg- flex items-center justify-center flex-shrink-0 overflow-hidden">
+            {user ? (
+              <span className="text-xl font-semibold text-green-500">
+                {initials}
+              </span>
+            ) : (
+              <span className="text-xs font-semibold text-accent">N/A</span>
+            )}
           </div>
           <div>
             <p className="font-bold text-text text-lg">{user?.full_name}</p>
@@ -47,10 +58,10 @@ export default function Settings() {
           </div>
         </div>
         <div className="grid grid-cols-2 gap-3">
-          <button className="py-2 px-4 rounded-xl text-sm font-medium border border-border text-muted hover:text-text hover:bg-hover transition-colors">
+          <button onClick={() => navigate("/view-profile")} className="py-2 px-4 rounded-xl text-sm font-medium border border-border text-muted hover:text-text hover:bg-hover transition-colors">
             Edit Profile
           </button>
-          <button onClick={()=>navigate("/send-otp")} className="py-2 px-4 rounded-xl text-sm font-medium border border-border text-muted hover:text-text hover:bg-hover transition-colors">
+          <button onClick={() => navigate("/send-otp")} className="py-2 px-4 rounded-xl text-sm font-medium border border-border text-muted hover:text-text hover:bg-hover transition-colors">
             Change Password
           </button>
         </div>
@@ -89,7 +100,7 @@ export default function Settings() {
               <Download size={16} className="text-muted" />
               <div>
                 <p className="text-sm font-medium text-text">Export CSV</p>
-                <p className="text-xs text-muted">Download all {expenses.length} expenses</p>
+                <p className="text-xs text-muted">Download all {expense.length} expenses</p>
               </div>
             </div>
             <button
@@ -125,15 +136,15 @@ export default function Settings() {
               </div>
             </div>
             <button
-              onClick={() => {
+              disabled={expenseLoading}
+              onClick={async () => {
                 if (confirm('Are you sure? This will delete all your expenses.')) {
-                  localStorage.removeItem('expense_tracker_expenses');
-                  window.location.reload();
+                  await dispatch(removeAll());
                 }
               }}
-              className="text-xs font-semibold text-red-600 hover:underline"
+              className="text-xs font-semibold text-red-600 hover:underline disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Delete All
+              {expenseLoading ? 'Deleting...' : 'Delete All'}
             </button>
           </div>
         </div>

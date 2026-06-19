@@ -4,6 +4,7 @@ import {
   deleteExpense as deleteExpenseThunk,
   updateExpense as updateExpenseThunk,
   viewExpenses as viewExpensesThunk,
+  deleteAllExpenses as deleteAllExpensesThunk
 } from './expenseSlice/expenses.slice';
 import { Expense as ApiExpense } from '../../types/expense.type';
 import { Category, Expense, ExpenseFilters } from '../../types';
@@ -78,6 +79,7 @@ export const { setFilters, clearFilters } = expensesSlice.actions;
 export const deleteExpense = deleteExpenseThunk;
 export const updateExpense = updateExpenseThunk;
 export const resetToSampleData = viewExpensesThunk;
+export const removeAll = deleteAllExpensesThunk;
 
 const selectApiExpenses = (state: RootState) => state.expense.expenses;
 const selectFilters = (state: RootState) => state.expenses.filters;

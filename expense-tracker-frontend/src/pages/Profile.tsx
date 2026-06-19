@@ -148,12 +148,9 @@ export default function Profile() {
   //   const [avatarSrc, setAvatarSrc] = useState<string | null>(user?.avatarUrl ?? null);
   const fileRef = useRef<HTMLInputElement>(null);
 
-  const initials = form.full_name
-    .split(' ')
-    .map((n) => n[0])
-    .join('')
-    .toUpperCase()
-    .slice(0, 2);
+  const initials = form?.full_name
+    ? form.full_name.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2)
+    : 'U';
 
   function startEdit(field: EditableField['field']) {
     dispatch(clearError())
@@ -234,8 +231,14 @@ export default function Profile() {
           {/* Avatar row */}
           <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 -mt-12 mb-4">
             <div className="relative w-fit">
-              <div className="w-24 h-24 rounded-2xl border-4 border-card bg-accent/20 flex items-center justify-center overflow-hidden shadow-lg">
-                <span className="text-2xl font-bold text-accent">{initials}</span>
+              <div className="w-24 h-24 rounded-full bg-accent/20 flex items-center justify-center flex-shrink-0 overflow-hidden">
+                {user ? (
+                  <span className="text-2xl font-bold text-accent">
+                    {initials}
+                  </span>
+                ) : (
+                  <span className="text-xs font-semibold text-accent">N/A</span>
+                )}
               </div>
               <button
                 onClick={() => fileRef.current?.click()}

@@ -20,7 +20,7 @@ const stats = [
 ];
 
 const testimonial = {
-  quote: "Expenzo is the first finance app that actually changed my habits — not just tracked them.",
+  quote: "ExpenseWallet is the first finance app that actually changed my habits — not just tracked them.",
   author: "Priya M.",
   role: "Product Designer, Bangalore",
 };
@@ -51,7 +51,7 @@ export default function AuthLayout({ children }: AuthLayoutProps) {
             <div className="w-9 h-9 rounded-xl bg-indigo-600 flex items-center justify-center shadow-lg shadow-indigo-600/40 group-hover:bg-indigo-500 transition-colors">
               <TrendingUp size={17} className="text-white" strokeWidth={2.5} />
             </div>
-            <span className="text-white text-lg font-semibold tracking-tight">Expenzo</span>
+            <span className="text-white text-lg font-semibold tracking-tight">ExpenseWallet</span>
           </Link>
         </div>
 
@@ -112,7 +112,7 @@ export default function AuthLayout({ children }: AuthLayoutProps) {
           <div className="w-8 h-8 rounded-xl bg-indigo-600 flex items-center justify-center">
             <TrendingUp size={15} className="text-white" strokeWidth={2.5} />
           </div>
-          <span className="text-slate-800 dark:text-white font-semibold text-base">Expenzo</span>
+          <span className="text-slate-800 dark:text-white font-semibold text-base">ExpenseWallet</span>
         </Link>
 
         <div className="w-full max-w-[420px]">

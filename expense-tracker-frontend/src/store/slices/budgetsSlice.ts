@@ -11,8 +11,12 @@ function load(): Budget[] {
   try {
     const s = localStorage.getItem(STORAGE_KEY);
     if (s) return JSON.parse(s);
-  } catch {}
+  } catch { }
   return sampleBudgets;
+}
+
+function persist(items: Budget[]) {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(items)); } catch { }
 }
 
 interface BudgetsState {
@@ -24,14 +28,19 @@ const budgetsSlice = createSlice({
   initialState: { items: load() } as BudgetsState,
   reducers: {
     setBudget(state, action: PayloadAction<Budget>) {
-      const idx = state.items.findIndex((b) => b.category === action.payload.category);
-      if (idx !== -1) state.items[idx] = action.payload;
-      else state.items.push(action.payload);
-      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state.items)); } catch {}
+      const budget = {
+        category: action.payload.category,
+        limit: action.payload.limit,
+        period: action.payload.period,
+      };
+      const idx = state.items.findIndex((b) => b.category === budget.category);
+      if (idx !== -1) state.items[idx] = budget;
+      else state.items.push(budget);
+      persist(state.items);
     },
-    removeBudget(state, action: PayloadAction<Category>) {
-      state.items = state.items.filter((b) => b.category !== action.payload);
-      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state.items)); } catch {}
+    removeBudget(state, action: PayloadAction<{ category: Category }>) {
+      state.items = state.items.filter((b) => b.category !== action.payload.category);
+      persist(state.items);
     },
   },
 });

@@ -2,6 +2,7 @@ import { expenseApis } from "@/services/expenses.service";
 import { Expense, ExpenseStates } from "@/types/expense.type";
 import { handleApiError } from "@/utils/apiError";
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
+import type { RootState } from "@/store";
 
 const initialStates: ExpenseStates = {
     expenses: [],
@@ -13,7 +14,7 @@ const initialStates: ExpenseStates = {
 // Async Thunks
 export const addExpense = createAsyncThunk(
     "expenses/add",
-    async (data: Partial<Expense>, { rejectWithValue }) => {
+    async (data: Partial<Expense>, { rejectWithValue, getState }) => {
         try {
             const response = await expenseApis.addExpense(data);
             return response.data.data;
@@ -25,7 +26,7 @@ export const addExpense = createAsyncThunk(
 
 export const viewExpenses = createAsyncThunk(
     "expenses/viewAll",
-    async (_, { rejectWithValue }) => {
+    async (_, { rejectWithValue, getState }) => {
         try {
             const response = await expenseApis.viewExpenses();
             return response.data.data;
@@ -37,7 +38,7 @@ export const viewExpenses = createAsyncThunk(
 
 export const viewExpense = createAsyncThunk(
     "expenses/viewById",
-    async (expenseId: string, { rejectWithValue }) => {
+    async (expenseId: string, { rejectWithValue, getState }) => {
         try {
             const response = await expenseApis.viewExpense(expenseId);
             return response.data.data;
@@ -51,7 +52,7 @@ export const updateExpense = createAsyncThunk(
     "expenses/update",
     async (
         { expenseId, data }: { expenseId: string; data: Partial<Expense> },
-        { rejectWithValue }
+        { rejectWithValue, getState }
     ) => {
         try {
             const response = await expenseApis.updateExpense(expenseId, data);
@@ -64,7 +65,7 @@ export const updateExpense = createAsyncThunk(
 
 export const deleteExpense = createAsyncThunk(
     "expenses/delete",
-    async (expenseId: string, { rejectWithValue }) => {
+    async (expenseId: string, { rejectWithValue, getState }) => {
         try {
             await expenseApis.deleteExpense(expenseId);
             return expenseId;
@@ -74,11 +75,20 @@ export const deleteExpense = createAsyncThunk(
     }
 );
 
+export const deleteAllExpenses = createAsyncThunk("expenses/removeAll", async (_, { rejectWithValue, getState }) => {
+    try {
+        const response = await expenseApis.removeAllExpense();
+        return response.data.data;
+    } catch (error) {
+        return rejectWithValue(handleApiError(error));
+    }
+})
+
 export const filterExpense = createAsyncThunk(
     "expenses/filter",
-    async (_, { rejectWithValue }) => {
+    async (_, { rejectWithValue, getState }) => {
         try {
-            const response = await expenseApis.filterExpense();
+            const response = await expenseApis.filterExpense("month", undefined);
             return response.data.data;
         } catch (error) {
             return rejectWithValue(handleApiError(error));
@@ -201,6 +211,24 @@ export const expenseSlice = createSlice({
                 state.error = null;
             })
             .addCase(deleteExpense.rejected, (state, action) => {
+                state.loading = false;
+                state.error = action.payload as string;
+                state.success = false;
+            });
+
+        builder
+            .addCase(deleteAllExpenses.pending, (state) => {
+                state.loading = true;
+                state.error = null;
+                state.success = false;
+            })
+            .addCase(deleteAllExpenses.fulfilled, (state, action) => {
+                state.loading = false;
+                state.success = true;
+                state.expenses = action.payload;
+                state.error = null;
+            })
+            .addCase(deleteAllExpenses.rejected, (state, action) => {
                 state.loading = false;
                 state.error = action.payload as string;
                 state.success = false;

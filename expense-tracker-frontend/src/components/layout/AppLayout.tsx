@@ -17,9 +17,12 @@ export default function AppLayout() {
   const sidebarOpen = useAppSelector(selectSidebarOpen);
 
   useEffect(() => {
-    dispatch(viewExpenses());
     dispatch(viewGroups());
     dispatch(viewInvitations());
+  }, [dispatch]);
+
+  useEffect(() => {
+    dispatch(viewExpenses());
   }, [dispatch]);
 
   return (

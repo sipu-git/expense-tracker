@@ -228,7 +228,7 @@ function LeftPanel() {
       {/* Features */}
       <div>
         <SectionLabel color="violet">Features</SectionLabel>
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-1 lg:grid-cols-2 md:grid-cols-2 gap-2">
           {FEATURES.map(({ icon: Icon, iconBg, iconColor, title, desc }) => (
             <div
               key={title}
@@ -441,7 +441,7 @@ function ExpenseForm() {
 
       <div className="flex flex-col gap-4 flex-1">
         {/* Amount + Quantity */}
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid lg:grid-cols-3 md:grid-cols-3 grid-cols-1 gap-3">
           <Field label="Expense name" icon={Tag} error={errors.name}>
           <input
             className={inputBase(!!errors.name)}
@@ -497,7 +497,7 @@ function ExpenseForm() {
           <label className="text-[11px] font-medium text-slate-500 dark:text-slate-400">
             Category
           </label>
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid lg:grid-cols-3 grid-cols-2 gri gap-3">
             {EXPENSE_TYPES.map((t) => (
               <button
                 key={t}

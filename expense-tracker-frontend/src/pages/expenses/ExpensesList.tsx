@@ -141,7 +141,7 @@ export default function ExpensesList() {
               <div key={group.date} className="card overflow-hidden">
                 <button
                   onClick={() => toggleDay(group.date)}
-                  className="w-full flex items-center justify-between hover:bg-hover -mx-5 -mt-4 px-5 pt-4 pb-3 mb-2 transition-colors"
+                  className="w-full flex items-center justify-between hover:bg-hover lg:-mx-5 -mt-4 lg:px-5 px-1 rounded-xl pt-4 pb-3 mb-2 transition-colors"
                 >
                   <div className="flex items-center gap-3">
                     <div className="w-8 h-8 rounded-lg bg-accent/10 flex items-center justify-center text-xs font-bold text-accent">

@@ -79,8 +79,8 @@ export default function App() {
               element={<Dashboard />}
             />
 
-            <Route path="/expenses" element={<ExpensesList />}/>
-            <Route path="/add-expense" element={<AddExpensePage />}/>
+            <Route path="/expenses" element={<ExpensesList />} />
+            <Route path="/add-expense" element={<AddExpensePage />} />
 
             <Route
               path="/analytics"
@@ -91,8 +91,6 @@ export default function App() {
               path="/budgets"
               element={<Budgets />}
             />
-
-            <Route path="/settings" element={<Settings />} />
             <Route path="/settings" element={<Settings />} />
           </Route>
         )}

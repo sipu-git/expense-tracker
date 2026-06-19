@@ -123,7 +123,7 @@ export default function Budgets() {
                   <div className="flex items-center gap-2">
                     <StatusIcon size={16} className={statusColor} />
                     <button
-                      onClick={() => dispatch(removeBudget(b.category))}
+                      onClick={() => dispatch(removeBudget({ category: b.category }))}
                       className="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg hover:bg-red-500/10 text-muted hover:text-red-500 transition-all"
                     >
                       <Trash2 size={13} />

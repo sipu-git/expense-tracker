@@ -4,7 +4,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import {
   Menu, Sun, Moon, Download, Bell,
   X, Check, AlertCircle, Info, ChevronRight,
-  User, LogOut, Settings, ChevronDown,
+  User, LogOut, Settings, ChevronDown, Wallet, Plus, Loader2,
 } from 'lucide-react';
 import { useAppDispatch, useAppSelector } from '../../hooks/redux';
 import { toggleSidebar, toggleTheme, selectTheme } from '../../store/slices/uiSlice';
@@ -13,8 +13,6 @@ import { exportToCSV } from '../../utils';
 import { format } from 'date-fns';
 import { selectIsAuthenticated, signOutUser } from '@/store/slices/userSlices/user.slice';
 import { useSelector } from 'react-redux';
-
-// ── Types ─────────────────────────────────────────────────────────────────────
 
 type NotifKind = 'alert' | 'info' | 'success';
 
@@ -259,8 +257,6 @@ function ProfileDropdown({
   );
 }
 
-// ── Header ────────────────────────────────────────────────────────────────────
-
 export default function Header() {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
@@ -274,6 +270,7 @@ export default function Header() {
 
   const notif = useDropdown();
   const profile = useDropdown();
+  const accountMenu = useDropdown();
 
   const [notifs, setNotifs] = useState<Notification[]>(DEMO_NOTIFICATIONS);
   const unreadCount = notifs.filter((n) => !n.read).length;
@@ -342,7 +339,6 @@ export default function Header() {
 
       {/* ── Right ── */}
       <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
-
         {/* Export — label on md+, icon-only below */}
         <button
           onClick={handleExport}
@@ -375,7 +371,7 @@ export default function Header() {
         {/* Notifications */}
         <div ref={notif.ref} className="relative">
           <button
-            onClick={() => { notif.setOpen((p) => !p); profile.setOpen(false); }}
+            onClick={() => { notif.setOpen((p) => !p); profile.setOpen(false); accountMenu.setOpen(false); }}
             disabled={isLoggingOut}
             aria-label={`Notifications${unreadCount > 0 ? `, ${unreadCount} unread` : ''}`}
             className={`relative p-2 rounded-xl hover:bg-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${notif.open ? 'bg-hover text-text' : 'text-muted hover:text-text'}`}
@@ -401,7 +397,7 @@ export default function Header() {
         {/* ── Profile ── */}
         <div ref={profile.ref} className="relative">
           <button
-            onClick={() => { profile.setOpen((p) => !p); notif.setOpen(false); }}
+            onClick={() => { profile.setOpen((p) => !p); notif.setOpen(false); accountMenu.setOpen(false); }}
             disabled={isLoggingOut}
             aria-label="Account menu"
             className={`flex items-center gap-0.5 pl-1 pr-2 py-1 rounded-xl hover:bg-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${profile.open ? 'bg-hover' : ''}`}

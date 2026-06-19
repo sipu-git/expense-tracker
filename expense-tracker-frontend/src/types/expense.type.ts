@@ -6,6 +6,7 @@ export interface Expense {
     type :ExpenseTypes;
     quantity: string;
     bought_at: string;
+    accountId?: string;
     groupId?: string;
     created_by?: string;
     createdAt: string;
