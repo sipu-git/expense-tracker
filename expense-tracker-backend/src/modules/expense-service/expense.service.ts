@@ -1,10 +1,11 @@
+import { AppError } from "../../../lib/AppError.js";
 import { prisma } from "../../../lib/prisma.js";
 import { GroupRole } from "../../shared/configs/rbac.role.js";
 import { ExpenseFilter, getExpenseDateRange } from "../../shared/util/expenses.util.js";
 import { CreateExpenseInputs } from "./expenses.validation.js";
 
 export async function createExpenses(data: CreateExpenseInputs, userId: string) {
-    return await prisma.$transaction(async (tx:any) => {
+    return await prisma.$transaction(async (tx: any) => {
         if (data.groupId) {
             const member = await tx.groupMembers.findFirst({
                 where: {
@@ -13,7 +14,7 @@ export async function createExpenses(data: CreateExpenseInputs, userId: string) 
                 }
             })
             if (!member) {
-                throw new Error("You are not a member of this group")
+                throw new AppError("You are not a member of this group")
             }
         }
         const expenses = await tx.expenses.create({
@@ -70,7 +71,7 @@ export async function viewAllExpenses(userId: string) {
 }
 
 export async function ViewExpenseById(expenseId: string, userId: string) {
-    return await prisma.$transaction(async (tx:any) => {
+    return await prisma.$transaction(async (tx: any) => {
         const expense = await tx.expenses.findUnique({
             where: {
                 id: expenseId
@@ -82,7 +83,7 @@ export async function ViewExpenseById(expenseId: string, userId: string) {
         if (!expense) throw new Error("Expense not found")
         if (!expense.groupId) {
             if (expense.created_by !== userId) {
-                throw new Error("You don't have access to this expense")
+                throw new AppError("You don't have access to this expense")
             }
             return expense
         }
@@ -101,19 +102,19 @@ export async function ViewExpenseById(expenseId: string, userId: string) {
                 }
             }
         })
-        if (!members) throw new Error("You don't have access to this expense")
+        if (!members) throw new AppError("You don't have access to this expense")
         return expense
     })
 }
 
 export async function updateExpenses(expenseId: string, data: CreateExpenseInputs, userId: string) {
-    return await prisma.$transaction(async (tx:any) => {
+    return await prisma.$transaction(async (tx: any) => {
         const expense = await tx.expenses.findUnique({
             where: {
                 id: expenseId
             }
         })
-        if (!expense) throw new Error("Expense not found")
+        if (!expense) throw new AppError("Expense not found")
 
         if (!expense.groupId) {
             if (expense.created_by !== userId) throw new Error("You don't have access to this expense")
@@ -126,13 +127,13 @@ export async function updateExpenses(expenseId: string, data: CreateExpenseInput
                 }
             })
             if (!member) {
-                throw new Error("You are not a member of this group")
+                throw new AppError("You are not a member of this group")
             }
 
             const canUpdate = expense.created_by === userId || member.role === GroupRole.ADMIN;
 
             if (!canUpdate) {
-                throw new Error("You don't have permission to update this expense");
+                throw new AppError("You don't have permission to update this expense");
             }
         }
 
@@ -147,15 +148,15 @@ export async function updateExpenses(expenseId: string, data: CreateExpenseInput
 }
 
 export async function deleteExpense(expenseId: string, userId: string) {
-    return await prisma.$transaction(async (tx:any) => {
+    return await prisma.$transaction(async (tx: any) => {
         const expense = await tx.expenses.findUnique({
             where: {
                 id: expenseId
             }
         })
-        if (!expense) throw new Error("Expense not found")
+        if (!expense) throw new AppError("Expense not found")
         if (!expense.groupId) {
-            if (expense.created_by !== userId) throw new Error("You don't have access to this expense")
+            if (expense.created_by !== userId) throw new AppError("You don't have access to this expense")
         }
         else {
             const member = await tx.groupMembers.findFirst({
@@ -165,12 +166,12 @@ export async function deleteExpense(expenseId: string, userId: string) {
                 }
             })
             if (!member) {
-                throw new Error("You are not a member of this group")
+                throw new AppError("You are not a member of this group")
             }
 
             const canDelete = expense.created_by === userId || member.role === GroupRole.ADMIN;
             if (!canDelete) {
-                throw new Error("You don't have permission to delete this expense");
+                throw new AppError("You don't have permission to delete this expense");
             }
         }
         const deletedExpense = await tx.expenses.delete({
@@ -182,10 +183,29 @@ export async function deleteExpense(expenseId: string, userId: string) {
     })
 }
 
+
+export async function removeAllExpenses(userId: string) {
+    return await prisma.$transaction(async (tx) => {
+        const findUser = await tx.user.findUnique({
+            where: {
+                id: userId
+            }
+        })
+        if (!findUser) {
+            throw new AppError("User doesn't exist!")
+        }
+        const dropAll = await tx.expenses.deleteMany({
+            where: {
+                created_by: userId
+            }
+        })
+        return dropAll;
+    })
+}
 export async function getExpensesByFilter(userId: string, filters: ExpenseFilter, groupId?: string) {
     const { startDate, endDate } = getExpenseDateRange(filters)
 
-    return await prisma.$transaction(async (tx:any) => {
+    return await prisma.$transaction(async (tx: any) => {
         if (groupId) {
             const members = await tx.groupMembers.findFirst({
                 where: {
@@ -194,7 +214,7 @@ export async function getExpensesByFilter(userId: string, filters: ExpenseFilter
                 }
             })
 
-            if (!members) throw new Error("You are not a member of this group")
+            if (!members) throw new AppError("You are not a member of this group")
 
             const results = await tx.expenses.aggregate({
                 where: {

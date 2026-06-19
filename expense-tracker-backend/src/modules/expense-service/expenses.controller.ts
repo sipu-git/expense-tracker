@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import { createExpenseSchema, expenseFilterSchema } from "./expenses.validation.js";
-import { createExpenses, deleteExpense, getExpensesByFilter, updateExpenses, viewAllExpenses, ViewExpenseById } from "./expense.service.js";
+import { createExpenses, deleteExpense, getExpensesByFilter, removeAllExpenses, updateExpenses, viewAllExpenses, ViewExpenseById } from "./expense.service.js";
 import { errorResponse, successResponse } from "../../shared/util/ApiResponses.js";
 
 export const addExpense = async (req: Request, res: Response) => {
@@ -96,6 +96,15 @@ export const removeExpense = async (req: Request, res: Response) => {
     }
 };
 
+export const dropALlExpenses = async (req: Request, res: Response) => {
+    const userId = req.user?.id;
+    if (!userId) {
+        res.status(401).json(errorResponse("Unauthorized"));
+        return;
+    }
+    const response = await removeAllExpenses(userId)
+    return res.status(201).json(successResponse("All expenses removed successfully!", response))
+}
 export const fetchExpensesByFilter = async (req: Request, res: Response) => {
     try {
         const userId = req.user?.id;
