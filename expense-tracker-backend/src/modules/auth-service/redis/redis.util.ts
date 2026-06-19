@@ -1,3 +1,4 @@
+import { AppError } from "../../../../lib/AppError.js";
 import redis from "../../../shared/configs/redis.js";
 
 const otp_expiry = 600;
@@ -24,7 +25,7 @@ export async function storeOtp(email: string, otp: string, type: 'FORGOT_PASSWOR
     return true;
   } catch (error) {
     console.error('Error storing OTP in Redis:', error);
-    throw new Error('Failed to store OTP');
+    throw new AppError('Failed to store OTP');
   }
 }
 
@@ -34,7 +35,7 @@ export async function verfiyOtp(email: string, otp: string, type: 'FORGOT_PASSWO
     const key = `OTP:${type}:${email}`;
     const otpData = await redis.get(key)
     if (!otpData) {
-      throw new Error('OTP not found or expired');
+      throw new AppError('OTP not found or expired');
     }
     const parsedData: OtpData = JSON.parse(otpData);
     if (parsedData.otp !== otp) {
@@ -42,7 +43,7 @@ export async function verfiyOtp(email: string, otp: string, type: 'FORGOT_PASSWO
     }
     if (Date.now() > parsedData.expiresAt) {
       await deleteOTP(email, type);
-      throw new Error('OTP has expired');
+      throw new AppError('OTP has expired');
     }
     await deleteOTP(email, type);
     return {
@@ -79,7 +80,7 @@ export async function checkRateLimit(email: string): Promise<boolean> {
       await redis.expire(key, otp_rate_limit);
     }
     if (attempts > max_request) {
-      throw new Error(`Too many OTP requests. Please try again later. (${attempts}/${max_request})`);
+      throw new AppError(`Too many OTP requests. Please try again later. (${attempts}/${max_request})`);
     }
     return true;
   } catch (error) {

@@ -3,17 +3,18 @@ import { generateOTP } from "./auth.util.js";
 import { sendOtpEmail } from "../../shared/configs/nodemailer.config.js";
 import { checkRateLimit, resetRateLimit, storeOtp, verfiyOtp } from "./redis/redis.util.js";
 import jwt from 'jsonwebtoken';
+import { AppError } from "../../../lib/AppError.js";
 
 export async function sendForGotPasswordOtp(email: string): Promise<string> {
     try {
         await checkRateLimit(email)
         const user = await prisma.user.findUnique({
             where: {
-                email
+                email:email
             }
         })
         if (!user) {
-            throw new Error('User with this email does not exist');
+            throw new AppError('User with this email does not exist',404);
         }
         const otp = generateOTP()
         await storeOtp(email, otp, 'FORGOT_PASSWORD')
@@ -28,7 +29,7 @@ export async function verifyForgotPasswordOtp(email: string, otp: string): Promi
     try {
         const verify = await verfiyOtp(email, otp, "FORGOT_PASSWORD")
         if (!verify.isValid) {
-            throw new Error('Invalid OTP');
+            throw new AppError('Invalid OTP',400);
         }
         const findUser = await prisma.user.findUnique({
             where: {
@@ -36,7 +37,7 @@ export async function verifyForgotPasswordOtp(email: string, otp: string): Promi
             }
         })
         if (!findUser) {
-            throw new Error('User not found');
+            throw new AppError('User not found',404);
         }
         await resetRateLimit(email)
 

@@ -1,3 +1,4 @@
+import { AppError } from "../../../../lib/AppError.js";
 import { prisma } from "../../../../lib/prisma.js";
 import { GroupRole } from "../../../shared/configs/rbac.role.js";
 import { createGroupInviteInput } from "../group.validation.js";
@@ -15,7 +16,7 @@ export async function sendInvites(groupId: string, senderId: string, infos: crea
             }
         })
         if (!membership || membership.role !== GroupRole.ADMIN) {
-            throw new Error("Only admin can send invites");
+            throw new AppError("Only admin can send invites",403);
         }
         if (userId) {
             const user = await tx.user.findUnique({
@@ -23,7 +24,7 @@ export async function sendInvites(groupId: string, senderId: string, infos: crea
                 select: { id: true }
             })
             if (!user) {
-                throw new Error("User not found");
+                throw new AppError("User not found",404);
             }
             const existingMember = await tx.groupMembers.findUnique({
                 where: {
@@ -34,7 +35,7 @@ export async function sendInvites(groupId: string, senderId: string, infos: crea
                 },
             });
             if (existingMember) {
-                throw new Error("Member already exist!")
+                throw new AppError("Member already exist!",400)
             }
             const existingInvite = await tx.groupInvite.findFirst({
                 where: {
@@ -45,7 +46,7 @@ export async function sendInvites(groupId: string, senderId: string, infos: crea
             });
 
             if (existingInvite) {
-                throw new Error("User already invited");
+                throw new AppError("User already invited");
             }
         }
 
@@ -59,7 +60,7 @@ export async function sendInvites(groupId: string, senderId: string, infos: crea
             });
 
             if (existingInvite) {
-                throw new Error("Email already invited");
+                throw new AppError("Email already invited");
             }
         }
 
@@ -84,7 +85,7 @@ export async function viewAllInvitations(userId: string) {
         where: { id: userId },
     })
     if (!findUser) {
-        throw new Error("User not found");
+        throw new AppError("User not found",404);
     }
     const response = await prisma.groupInvite.findMany({
         select: {
@@ -132,10 +133,10 @@ export async function acceptInvitation(token: string, userId: string) {
             where: { token: token }
         })
         if (!invite) {
-            throw new Error("Invite not found");
+            throw new AppError("Invite not found",404);
         }
         if (invite.status !== "PENDING") {
-            throw new Error("Invite not pending");
+            throw new AppError("Invite not pending",400);
         }
         const updateInvite = await tx.groupInvite.update({
             where: { token: token },

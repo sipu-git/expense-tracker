@@ -1,3 +1,4 @@
+import { AppError } from "../../../lib/AppError.js";
 import { prisma } from "../../../lib/prisma.js";
 import { CreateUserInput, ModifyUserInput } from "./user.validation.js";
 import bcrypt from "bcrypt";
@@ -5,12 +6,12 @@ import jwt from "jsonwebtoken";
 
 export async function createUser(data: CreateUserInput) {
     const { full_name, email, phone, password } = data;
-    return await prisma.$transaction(async (prisma:any) => {
+    return await prisma.$transaction(async (prisma: any) => {
         const existingUser = await prisma.user.findUnique({
             where: { email },
         });
         if (existingUser) {
-            throw new Error("Email already in use");
+            throw new AppError("Email already in use", 402);
         }
         const hashedPassword = await bcrypt.hash(password, 10);
         const user = await prisma.user.create({
@@ -30,11 +31,11 @@ export async function loginUser(email: string, password: string) {
         where: { email: email },
     });
     if (!findUser) {
-        throw new Error("Invalid email or password");
+        throw new AppError("User doesn't exist!", 404);
     }
     const isPasswordValid = await bcrypt.compare(password, findUser.password);
     if (!isPasswordValid) {
-        throw new Error("Invalid email or password");
+        throw new AppError("Invalid password field", 400);
     }
 
     const token = await jwt.sign({ id: findUser.id, role: findUser.role }, process.env.JWT_SECRET as string, { expiresIn: "15d" });
@@ -43,12 +44,12 @@ export async function loginUser(email: string, password: string) {
 }
 
 export async function getUserById(id: string) {
-    return await prisma.$transaction(async (prisma:any) => {
+    return await prisma.$transaction(async (prisma: any) => {
         const user = await prisma.user.findUnique({
             where: { id },
         });
         if (!user) {
-            throw new Error("User not found");
+            throw new AppError("User not found",404);
         }
         return user;
     });
@@ -61,19 +62,19 @@ export async function signedOutuser(userId: string) {
         }
     })
     if (!user) {
-        throw new Error("User not found");
+        throw new AppError("User not found",404);
     }
     return user;
 }
 
 
 export async function modifyProfile(userId: string, payload: ModifyUserInput) {
-    return await prisma.$transaction(async (prisma:any) => {
+    return await prisma.$transaction(async (prisma: any) => {
         const user = await prisma.user.findUnique({
             where: { id: userId },
         });
         if (!user) {
-            throw new Error("User not found");
+            throw new AppError("User not found",404);
         }
         const updatedata: Partial<{
             full_name: string;
@@ -84,7 +85,7 @@ export async function modifyProfile(userId: string, payload: ModifyUserInput) {
         if (payload.full_name) {
             if (payload.full_name) {
                 if (payload.full_name.trim().length < 2) {
-                    throw new Error("Full name must be at least 2 characters");
+                    throw new AppError("Full name must be at least 2 characters",400);
                 }
                 updatedata.full_name = payload.full_name.trim();
             }
@@ -92,40 +93,40 @@ export async function modifyProfile(userId: string, payload: ModifyUserInput) {
         if (payload.email) {
             const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
             if (!emailRegex.test(payload.email)) {
-                throw new Error("Invalid email format");
+                throw new AppError("Invalid email format",400);
             }
             const existingUser = await prisma.user.findUnique({
                 where: { email: payload.email },
             });
             if (existingUser) {
-                throw new Error("Email is already in use");
+                throw new AppError("Email is already in use",402);
             }
             updatedata.email = payload.email;
         }
         if (payload.phone) {
             const phoneRegex = /^[0-9]{10,15}$/;
             if (!phoneRegex.test(payload.phone)) {
-                throw new Error("Invalid phone number format");
+                throw new AppError("Invalid phone number format",400);
             }
             updatedata.phone = payload.phone;
         }
         if (payload.newPassword) {
             if (!payload.currentPassword) {
-                throw new Error("Current password is required to set a new password");
+                throw new AppError("Current password is required to set a new password",400);
             }
             const isCurrentPasswordValid = await bcrypt.compare(
                 payload.currentPassword,
                 user.password
             );
             if (!isCurrentPasswordValid) {
-                throw new Error("Current password is incorrect");
+                throw new AppError("Current password is incorrect",400);
             }
             const isSamePassword = await bcrypt.compare(payload.newPassword, user.password);
             if (isSamePassword) {
-                throw new Error("New password must be different from current password");
+                throw new AppError("New password must be different from current password",400);
             }
             if (payload.newPassword.length < 8) {
-                throw new Error("New password must be at least 8 characters");
+                throw new AppError("New password must be at least 8 characters",400);
             }
             updatedata.password = await bcrypt.hash(payload.newPassword, 10);
         }

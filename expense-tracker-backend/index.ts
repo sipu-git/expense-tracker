@@ -6,6 +6,7 @@ import groupRoutes from "./src/modules/group-service/group.routes.js";
 import expenseRoutes from "./src/modules/expense-service/expenses.routes.js";
 import authRoutes from './src/modules/auth-service/auth.routes.js';
 import cookiesParser from "cookie-parser";
+import { globalErrorHandler } from "./src/shared/middlewares/error.middleware.js";
 dotenv.config();
 
 const app = exxpress();
@@ -22,6 +23,8 @@ app.use("/api/users", userRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/group", groupRoutes);
 app.use("/api/expenses", expenseRoutes);
+
+app.use(globalErrorHandler)
 
 const port = process.env.PORT || 3000;
 app.listen(port, () => {

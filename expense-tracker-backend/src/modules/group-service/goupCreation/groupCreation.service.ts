@@ -1,3 +1,4 @@
+import { AppError } from "../../../../lib/AppError.js";
 import { prisma } from "../../../../lib/prisma.js";
 import { GroupRole } from "../../../shared/configs/rbac.role.js";
 import { createGroupInput } from "../group.validation.js";
@@ -15,7 +16,7 @@ export async function createGroup(data: createGroupInput, creatorId: string) {
                 id: true
             }
         })
-        if (!creator) throw new Error("Authenticated user not found");
+        if (!creator) throw new AppError("Authenticated user not found",404);
 
 
         return await orm.group.create({
@@ -101,7 +102,7 @@ export async function viewGroupById(groupId: string, userId: string) {
                 userId_groupId: { userId, groupId }
             }
         })
-        if (!membership) throw new Error("Access Denied")
+        if (!membership) throw new AppError("Access Denied")
 
         return await orm.group.findUnique({
             where: { id: groupId },

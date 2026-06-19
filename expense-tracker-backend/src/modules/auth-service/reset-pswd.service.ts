@@ -2,6 +2,7 @@ import { prisma } from "../../../lib/prisma.js";
 // import { verifyForgotPasswordOtp } from "./forgot-pswd.service";
 import bcrypt from 'bcrypt';
 import { clearAllOTPs, resetRateLimit } from "./redis/redis.util.js";
+import { AppError } from "../../../lib/AppError.js";
 
 export async function resetPasswordWithToken(
   userId: string,
@@ -11,10 +12,10 @@ export async function resetPasswordWithToken(
   try {
 
     const user = await prisma.user.findUnique({ where: { id: userId } });
-    if (!user) throw new Error('User not found');
+    if (!user) throw new AppError('User not found',404);
 
     const isSamePassword = await bcrypt.compare(newPassword, user.password);
-    if (isSamePassword) throw new Error('New password must be different from the old password');
+    if (isSamePassword) throw new AppError('New password must be different from the old password',400);
 
     const hashedPassword = await bcrypt.hash(newPassword, 10);
 
