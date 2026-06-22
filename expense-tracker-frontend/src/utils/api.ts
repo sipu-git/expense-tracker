@@ -24,6 +24,7 @@ console.log("All accounts:", JSON.stringify(accountsState.accounts?.map(
         (config.headers as Record<string, string>)["Authorization"] = `Bearer ${activeAccount.token}`;
     }
 
+    // ← add these to bust the 304 cache
     config.headers["Cache-Control"] = "no-cache";
     config.headers["Pragma"] = "no-cache";
 

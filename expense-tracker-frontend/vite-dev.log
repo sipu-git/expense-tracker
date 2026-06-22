@@ -1,0 +1,14 @@
+
+> expense-tracker@1.0.0 dev
+> vite --host 127.0.0.1
+
+[33mThe CJS build of Vite's Node API is deprecated. See https://vite.dev/guide/troubleshooting.html#vite-cjs-node-api-deprecated for more details.[39m
+
+  [32m[1mVITE[22m v5.4.21[39m  [2mready in [0m[1m1963[22m[2m[0m ms[22m
+
+  [32m➜[39m  [1mLocal[22m:   [36mhttp://127.0.0.1:[1m5173[22m/[39m
+[2m[32m  ➜[39m[22m[2m  press [22m[1mh + enter[22m[2m to show help[22m
+(node:26308) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///C:/Github-Projects/expense%20tracker/expense-tracker-frontend/postcss.config.js is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to C:\Github-Projects\expense tracker\expense-tracker-frontend\package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
