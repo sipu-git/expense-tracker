@@ -5,6 +5,7 @@ import { store } from "@/store";
 
 export const api = axios.create({
     baseURL: "/api",
+    // baseURL: BASE_URL,
     withCredentials: true
 });
 

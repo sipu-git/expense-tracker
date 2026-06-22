@@ -11,45 +11,17 @@ import { toggleSidebar, toggleTheme, selectTheme } from '../../store/slices/uiSl
 import { selectFilteredExpenses } from '../../store/slices/expensesSlice';
 import { exportToCSV } from '../../utils';
 import { format } from 'date-fns';
-import { clearUser, selectIsAuthenticated, setUser, signOutUser } from '@/store/slices/userSlices/user.slice';
+import { clearUser, setUser, signOutUser } from '@/store/slices/userSlices/user.slice';
 import { useSelector } from 'react-redux';
-import { removeAccount, selectActiveAccount, selectAllAccounts, switchAccount } from '@/store/slices/accountSlices/account.slice';
+import {
+  removeAccount,
+  selectActiveAccount,
+  selectAllAccounts,
+  selectIsAuthenticatedFromAccounts,
+  switchAccount,
+} from '@/store/slices/accountSlices/account.slice';
 
 type NotifKind = 'alert' | 'info' | 'success';
-
-interface Notification {
-  id: string;
-  kind: NotifKind;
-  title: string;
-  body: string;
-  time: string;
-  read: boolean;
-}
-
-// ── Demo notifications ────────────────────────────────────────────────────────
-
-// const DEMO_NOTIFICATIONS: Notification[] = [
-//   {
-//     id: '1', kind: 'alert',
-//     title: 'Budget limit reached',
-//     body: 'Food & Dining is at 95% of your monthly budget.',
-//     time: '2m ago', read: false,
-//   },
-//   {
-//     id: '2', kind: 'info',
-//     title: 'Monthly report ready',
-//     body: 'Your June spending summary is available to download.',
-//     time: '1h ago', read: false,
-//   },
-//   {
-//     id: '3', kind: 'success',
-//     title: 'Export complete',
-//     body: 'expenses-2025-06.csv was downloaded successfully.',
-//     time: 'Yesterday', read: true,
-//   },
-// ];
-
-// ── Constants ─────────────────────────────────────────────────────────────────
 
 const VIEW_TITLES: Record<string, string> = {
   '/dashboard': 'Dashboard',
@@ -65,14 +37,6 @@ function getGreeting() {
   if (h < 17) return 'Good afternoon';
   return 'Good evening';
 }
-
-const KIND_STYLES: Record<NotifKind, { icon: React.ElementType; iconClass: string; dotClass: string }> = {
-  alert: { icon: AlertCircle, iconClass: 'text-amber-500', dotClass: 'bg-amber-500' },
-  info: { icon: Info, iconClass: 'text-blue-500', dotClass: 'bg-blue-500' },
-  success: { icon: Check, iconClass: 'text-emerald-500', dotClass: 'bg-emerald-500' },
-};
-
-// ── useDropdown hook — shared close-on-outside-click logic ────────────────────
 
 function useDropdown() {
   const [open, setOpen] = useState(false);
@@ -91,96 +55,6 @@ function useDropdown() {
   return { open, setOpen, ref };
 }
 
-// ── Notification panel ────────────────────────────────────────────────────────
-
-interface NotifPanelProps {
-  items: Notification[];
-  onMarkRead: (id: string) => void;
-  onClearAll: () => void;
-  onClose: () => void;
-}
-
-function NotifPanel({ items, onMarkRead, onClearAll, onClose }: NotifPanelProps) {
-  const unread = items.filter((n) => !n.read).length;
-
-  return (
-    <div className="absolute right-0 top-full mt-2 w-80 sm:w-96 z-[100] bg-card border border-border rounded-2xl shadow-xl overflow-hidden">
-      <div className="flex items-center justify-between px-4 py-3 border-b border-border">
-        <div className="flex items-center gap-2">
-          <span className="text-sm font-semibold text-text">Notifications</span>
-          {unread > 0 && (
-            <span className="text-xs font-semibold bg-accent text-white px-1.5 py-0.5 rounded-full leading-none">
-              {unread}
-            </span>
-          )}
-        </div>
-        <div className="flex items-center gap-1">
-          {unread > 0 && (
-            <button
-              onClick={onClearAll}
-              className="text-xs text-accent hover:underline px-1.5 py-1 rounded-lg hover:bg-hover transition-colors"
-            >
-              Mark all read
-            </button>
-          )}
-          <button
-            onClick={onClose}
-            className="p-1 rounded-lg hover:bg-hover text-muted hover:text-text transition-colors"
-          >
-            <X size={14} />
-          </button>
-        </div>
-      </div>
-
-      <div className="max-h-80 overflow-y-auto divide-y divide-border">
-        {items.length === 0 ? (
-          <div className="py-10 text-center">
-            <p className="text-2xl mb-1">🎉</p>
-            <p className="text-sm font-medium text-text">You're all caught up</p>
-            <p className="text-xs text-muted mt-0.5">No new notifications</p>
-          </div>
-        ) : (
-          items.map((n) => {
-            const { icon: Icon, iconClass, dotClass } = KIND_STYLES[n.kind];
-            return (
-              <button
-                key={n.id}
-                onClick={() => onMarkRead(n.id)}
-                className={`w-full flex items-start gap-3 px-4 py-3 text-left transition-colors hover:bg-hover ${!n.read ? 'bg-accent/5' : ''
-                  }`}
-              >
-                <div className={`mt-0.5 flex-shrink-0 ${iconClass}`}>
-                  <Icon size={16} />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-start justify-between gap-2">
-                    <p className="text-sm font-medium text-text leading-tight">{n.title}</p>
-                    <span className="text-xs text-muted flex-shrink-0 mt-0.5">{n.time}</span>
-                  </div>
-                  <p className="text-xs text-muted mt-0.5 leading-relaxed">{n.body}</p>
-                </div>
-                {!n.read && (
-                  <div className={`w-1.5 h-1.5 rounded-full flex-shrink-0 mt-1.5 {dotClass}`} />
-                )}
-              </button>
-            );
-          })
-        )}
-      </div>
-
-      {items.length > 0 && (
-        <div className="px-4 py-2.5 border-t border-border">
-          <button className="w-full flex items-center justify-center gap-1 text-xs text-accent hover:underline py-1">
-            View all notifications <ChevronRight size={12} />
-          </button>
-        </div>
-      )}
-    </div>
-  );
-}
-
-// ── Profile dropdown ──────────────────────────────────────────────────────────
-
 interface ProfileDropdownProps {
   user: { full_name?: string; email?: string; avatarUrl?: string } | null;
   onClose: () => void;
@@ -194,51 +68,50 @@ function ProfileDropdown({
   onClose,
   onNavigate,
   onLogout,
-  isLoggingOut = false
+  isLoggingOut = false,
 }: ProfileDropdownProps) {
   const dispatch = useAppDispatch();
-  // const navigate = useNavigate();
   const accounts = useSelector(selectAllAccounts);
   const activeAccount = useSelector(selectActiveAccount);
 
+  // Only show accounts OTHER than the active one
+  const otherAccounts = accounts.filter(a => a.id !== activeAccount?.id);
+
   const handleSwitch = (id: string) => {
-    if (id === activeAccount?.id) { onClose(); return; }
     const targetAccount = accounts.find(a => a.id === id);
     if (!targetAccount) return;
 
     dispatch(switchAccount(id));
     dispatch(setUser(targetAccount.user));
     onClose();
+    onNavigate('/dashboard');
   };
 
   const handleRemoveAccount = (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
-    const removingActiveAccount = id === activeAccount?.id;
-    const nextAccount = accounts.find(a => a.id !== id);
-
     dispatch(removeAccount(id));
-
-    if (removingActiveAccount && nextAccount) {
+    // removeAccount reducer already switches activeAccountId to next account
+    // so we just need to sync userSlice
+    const nextAccount = accounts.find(a => a.id !== id);
+    if (nextAccount) {
       dispatch(setUser(nextAccount.user));
-    }
-
-    if (removingActiveAccount && !nextAccount) {
+    } else {
       dispatch(clearUser());
       onClose();
-      onNavigate("/login");
+      onNavigate('/login');
     }
   };
 
   return (
     <div className="absolute right-0 top-full mt-2 w-64 z-[100] bg-card border border-border rounded-2xl shadow-xl overflow-hidden">
 
-      {/* ── Active user info ── */}
+      {/* Active user info */}
       <div className="px-4 py-3 border-b border-border">
         <p className="text-sm font-semibold text-text truncate">{user?.full_name ?? 'User'}</p>
         <p className="text-xs text-muted truncate mt-0.5">{user?.email ?? ''}</p>
       </div>
 
-      {/* ── Menu actions ── */}
+      {/* Menu actions */}
       <div className="py-1 border-b border-border">
         <button
           onClick={() => { onClose(); onNavigate('/view-profile'); }}
@@ -246,13 +119,6 @@ function ProfileDropdown({
         >
           <User size={15} className="text-muted flex-shrink-0" />
           View profile
-        </button>
-        <button
-          onClick={() => { onClose(); onNavigate('/groups'); }}
-          className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-text hover:bg-hover transition-colors"
-        >
-          <User size={15} className="text-muted flex-shrink-0" />
-          View Groups
         </button>
         <button
           onClick={() => { onClose(); onNavigate('/settings'); }}
@@ -263,57 +129,46 @@ function ProfileDropdown({
         </button>
       </div>
 
-      {/* ── Other profiles (Chrome-style) ── */}
-      {accounts.length > 0 && (
+      {/* Other accounts — only shown if there are other accounts */}
+      {otherAccounts.length > 0 && (
         <div className="py-2 border-b border-border">
           <p className="px-4 pb-1.5 text-xs font-semibold text-muted uppercase tracking-wider">
             Other profiles
           </p>
-
-          {accounts.map(account => {
-            if (!account.id) return null;
-            const isActive = account.id === activeAccount?.id;
+          {otherAccounts.map(account => {
             const initials = account.user.full_name?.[0]?.toUpperCase() ?? '?';
-
             return (
               <div
                 key={account.id}
                 onClick={() => handleSwitch(account.id)}
-                className={`group flex items-center gap-3 px-4 py-2 cursor-pointer hover:bg-hover transition-colors ${isActive ? 'bg-hover' : ''}`}
+                className="group flex items-center gap-3 px-4 py-2 cursor-pointer hover:bg-hover transition-colors"
               >
-                {/* Avatar circle */}
                 <div className="w-7 h-7 rounded-full bg-accent/20 flex items-center justify-center flex-shrink-0">
                   <span className="text-xs font-semibold text-accent">{initials}</span>
                 </div>
-
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm text-text truncate leading-tight">{account.user.full_name}</p>
                   <p className="text-xs text-muted truncate">{account.user.email}</p>
                 </div>
-
-                {/* Active check */}
-                {isActive && <Check size={13} className="text-accent flex-shrink-0" />}
-
-                {/* Remove — only shows on hover, only for non-active */}
-                {!isActive && (
-                  <button
-                    onClick={(e) => handleRemoveAccount(e, account.id)}
-                    title="Remove account"
-                    className="opacity-0 group-hover:opacity-100 p-0.5 rounded text-muted hover:text-red-400 transition-all flex-shrink-0"
-                  >
-                    <X size={12} />
-                  </button>
-                )}
+                <button
+                  onClick={(e) => handleRemoveAccount(e, account.id)}
+                  title="Remove account"
+                  className="opacity-0 group-hover:opacity-100 p-0.5 rounded text-muted hover:text-red-400 transition-all flex-shrink-0"
+                >
+                  <X size={12} />
+                </button>
               </div>
             );
           })}
         </div>
       )}
 
-      {/* ── Add account ── */}
+      {/* Add account — navigates to /login WITH addAccount state */}
       <div className="py-1 border-b border-border">
         <button
-          onClick={() => { onClose(); onNavigate('/login', { state: { addAccount: true } }); }}
+          onClick={() => {
+            onClose();
+            onNavigate('/login', { state: { addAccount: true } });
+          }}
           className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-text hover:bg-hover transition-colors"
         >
           <Plus size={15} className="text-muted flex-shrink-0" />
@@ -321,10 +176,13 @@ function ProfileDropdown({
         </button>
       </div>
 
-      {/* ── Sign out ── */}
+      {/* Sign out — removes active account then redirects */}
       <div className="py-1">
         <button
-          onClick={async () => { onClose(); await onLogout(); }}
+          onClick={async () => {
+            onClose();
+            await onLogout();
+          }}
           disabled={isLoggingOut}
           className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-red-500 hover:bg-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
@@ -335,6 +193,7 @@ function ProfileDropdown({
     </div>
   );
 }
+
 export default function Header() {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
@@ -342,19 +201,14 @@ export default function Header() {
   const expenses = useAppSelector(selectFilteredExpenses);
   const { user, loading: isLoggingOut } = useAppSelector((state) => state.user);
   const location = useLocation();
-  const isAuthenticated = useSelector(selectIsAuthenticated);
+  // ✅ Use accountsSlice selector, not userSlice
+  const isAuthenticated = useAppSelector(selectIsAuthenticatedFromAccounts);
 
   const pageTitle = VIEW_TITLES[location.pathname] ?? 'SpendWise';
 
   const notif = useDropdown();
   const profile = useDropdown();
   const accountMenu = useDropdown();
-
-  // const [notifs, setNotifs] = useState<Notification[]>(DEMO_NOTIFICATIONS);
-  // const unreadCount = notifs.filter((n) => !n.read).length;
-
-  // const markRead = (id: string) => setNotifs((p) => p.map((n) => n.id === id ? { ...n, read: true } : n));
-  // const markAllRead = () => setNotifs((p) => p.map((n) => ({ ...n, read: true })));
 
   const handleExport = () => {
     exportToCSV(
@@ -389,7 +243,6 @@ export default function Header() {
     );
   }
 
-  // Derive initials for avatar
   const initials = user?.full_name
     ? user.full_name.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2)
     : 'U';
@@ -397,7 +250,7 @@ export default function Header() {
   return (
     <header className="sticky top-0 z-20 flex items-center justify-between px-4 md:px-6 h-16 bg-header border-b border-border backdrop-blur-sm">
 
-      {/* ── Left ── */}
+      {/* Left */}
       <div className="flex items-center gap-3 min-w-0">
         <button
           onClick={() => dispatch(toggleSidebar())}
@@ -406,92 +259,51 @@ export default function Header() {
         >
           <Menu size={20} />
         </button>
-
         <div className="min-w-0">
           <h1 className="font-bold text-base text-text leading-tight truncate">{pageTitle}</h1>
           <p className="text-xs text-muted hidden sm:block truncate">
-            {getGreeting()}, {user?.full_name?.split(' ')[0] ?? 'Alex'} 👋 — {format(new Date(), 'EEEE, MMMM d')}
+            {getGreeting()}, {user?.full_name?.split(' ')[0] ?? 'there'} 👋 — {format(new Date(), 'EEEE, MMMM d')}
           </p>
         </div>
       </div>
 
-      {/* ── Right ── */}
+      {/* Right */}
       <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
-        {/* Export — label on md+, icon-only below */}
         <button
           onClick={handleExport}
-          disabled={isLoggingOut}
-          className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm font-medium hover:bg-hover text-muted hover:text-text transition-colors border border-border disabled:opacity-50 disabled:cursor-not-allowed"
+          className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm font-medium hover:bg-hover text-muted hover:text-text transition-colors border border-border"
         >
           <Download size={15} />
           <span>Export</span>
         </button>
-
         <button
           onClick={handleExport}
-          disabled={isLoggingOut}
           aria-label="Export expenses"
-          className="md:hidden p-2 rounded-xl hover:bg-hover text-muted hover:text-text transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          className="md:hidden p-2 rounded-xl hover:bg-hover text-muted hover:text-text transition-colors"
         >
           <Download size={18} />
         </button>
 
-        {/* Theme toggle */}
         <button
           onClick={() => dispatch(toggleTheme())}
-          disabled={isLoggingOut}
           aria-label="Toggle theme"
-          className="p-2 rounded-xl hover:bg-hover text-muted hover:text-text transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          className="p-2 rounded-xl hover:bg-hover text-muted hover:text-text transition-colors"
         >
           {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
         </button>
 
-        {/* Notifications */}
-        {/* <div ref={notif.ref} className="relative">
-          <button
-            onClick={() => { notif.setOpen((p) => !p); profile.setOpen(false); accountMenu.setOpen(false); }}
-            disabled={isLoggingOut}
-            aria-label={`Notifications${unreadCount > 0 ? `, ${unreadCount} unread` : ''}`}
-            className={`relative p-2 rounded-xl hover:bg-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${notif.open ? 'bg-hover text-text' : 'text-muted hover:text-text'}`}
-          >
-            <Bell size={18} />
-            {unreadCount > 0 && (
-              <span className="absolute top-1 right-1 min-w-[16px] h-4 flex items-center justify-center bg-red-500 text-white text-[10px] font-bold rounded-full px-1 ring-2 ring-header leading-none">
-                {unreadCount > 9 ? '9+' : unreadCount}
-              </span>
-            )}
-          </button>
-
-          {notif.open && (
-            <NotifPanel
-              items={notifs}
-              onMarkRead={markRead}
-              onClearAll={markAllRead}
-              onClose={() => notif.setOpen(false)}
-            />
-          )}
-        </div> */}
-
-        {/* ── Profile ── */}
+        {/* Profile dropdown */}
         <div ref={profile.ref} className="relative">
           <button
             onClick={() => { profile.setOpen((p) => !p); notif.setOpen(false); accountMenu.setOpen(false); }}
-            disabled={isLoggingOut}
             aria-label="Account menu"
-            className={`flex items-center gap-0.5 pl-1 pr-2 py-1 rounded-xl hover:bg-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${profile.open ? 'bg-hover' : ''}`}
+            className={`flex items-center gap-0.5 pl-1 pr-2 py-1 rounded-xl hover:bg-hover transition-colors ${profile.open ? 'bg-hover' : ''}`}
           >
-            {/* Avatar */}
             <div className="w-8 h-8 rounded-full bg-accent/20 flex items-center justify-center flex-shrink-0 overflow-hidden">
-              {user ? (
-                <div className="text-xs w-8 h-8 flex justify-center items-center rounded-full bg-blue-100 font-semibold text-accent">
-                  {initials}
-                </div>
-              ) : (
-                <span className="text-xs font-semibold text-accent">N/A</span>
-              )}
+              <div className="text-xs w-8 h-8 flex justify-center items-center rounded-full bg-blue-100 font-semibold text-accent">
+                {initials}
+              </div>
             </div>
-
-            {/* Chevron — visible on sm+ */}
             <ChevronDown
               size={14}
               className={`hidden sm:block text-muted transition-transform duration-200 ${profile.open ? 'rotate-180' : ''}`}

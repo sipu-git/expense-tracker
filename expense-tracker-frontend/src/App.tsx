@@ -1,5 +1,3 @@
-// src/App.tsx
-
 import React, { useEffect, useRef } from "react";
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { useAppDispatch, useAppSelector } from "./hooks/redux";
@@ -17,7 +15,7 @@ import ForgotPasswordEmail from "./pages/auth/ForgotPswdPage";
 import VerifyPasswordOtp from "./pages/auth/VerifyOtpPage";
 import ResetPassword from "./pages/auth/ResetPasswordPage";
 import AddExpensePage from "./pages/expenses/AddExpenses";
-import { selectActiveAccount } from "./store/slices/accountSlices/account.slice";
+import { selectActiveAccount, selectIsAuthenticatedFromAccounts } from "./store/slices/accountSlices/account.slice";
 // import AppLayout from "./components/layout/AppLayout";
 
 function LoginRoute({ isAuthenticated }: { isAuthenticated: boolean }) {
@@ -31,11 +29,21 @@ function LoginRoute({ isAuthenticated }: { isAuthenticated: boolean }) {
   return <Login />;
 }
 
+// function RegisterRoute({ isAuthenticated }: { isAuthenticated: boolean }) {
+//   const location = useLocation();
+//   const isAddingAccount = Boolean(location.state?.addAccount);
+
+//   if (isAuthenticated && !isAddingAccount) {
+//     return <Navigate to="/dashboard" replace />;
+//   }
+//   return <Register />;
+// }
+
 export default function App() {
   const dispatch = useAppDispatch();
-  const isAuthenticated = useAppSelector(selectIsAuthenticated);
+  const isAuthenticated = useAppSelector(selectIsAuthenticatedFromAccounts);
   const hydrating = useAppSelector(selectHydrating);
-  const activeAccount = useAppSelector(selectActiveAccount)
+  const activeAccount = useAppSelector(selectActiveAccount);
   const profileRequestedFor = useRef<string | null>(null);
 
   useEffect(() => {
@@ -44,12 +52,10 @@ export default function App() {
       profileRequestedFor.current = null;
       return;
     }
-
     if (profileRequestedFor.current === activeAccount.id) return;
     profileRequestedFor.current = activeAccount.id;
     dispatch(viewProfile());
   }, [dispatch, activeAccount?.id]);
-
   if (hydrating) {
     return (
       <div className="h-screen flex items-center justify-center">
@@ -79,14 +85,7 @@ export default function App() {
           element={<LoginRoute isAuthenticated={isAuthenticated} />}
         />
 
-        <Route
-          path="/register"
-          element={
-            isAuthenticated
-              ? <Navigate to="/dashboard" replace />
-              : <Register />
-          }
-        />
+        <Route path="/register" element={<Register />} />
 
         {isAuthenticated && (
           <Route element={<AppLayout />}>

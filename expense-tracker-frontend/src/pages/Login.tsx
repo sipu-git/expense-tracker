@@ -8,7 +8,7 @@ import { LoginFormData, loginSchema } from "@/validations/login.validate";
 import { clearError, loginUser, viewProfile } from "@/store/slices/userSlices/user.slice";
 import AuthLayout from "./AuthLayout";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { addAccount } from "@/store/slices/accountSlices/account.slice";
+// import { addAccount } from "@/store/slices/accountSlices/account.slice";
 
 interface FieldProps {
     label: string;
@@ -81,6 +81,7 @@ export default function Login() {
     const [showPassword, setShowPassword] = useState(false);
     const location = useLocation()
     const prefillEmail = location.state?.prefillEmail ?? "";
+    const isAddNewAccount = Boolean(location.state?.addAccount);
 
     const { register, handleSubmit, formState: { errors } } = useForm<LoginFormData>({
         resolver: zodResolver(loginSchema),
@@ -100,8 +101,8 @@ export default function Login() {
         );
 
         if (loginUser.fulfilled.match(result)) {
-            // const { user, token } = result.payload;
-            dispatch(addAccount(result.payload))
+            // // const { user, token } = result.payload;
+            // dispatch(addAccount(result.payload))
             navigate("/dashboard", { replace: true });
         }
     };
@@ -250,6 +251,7 @@ export default function Login() {
                 Don't have an account?{" "}
                 <Link
                     to="/register"
+                    state={isAddNewAccount ? { addAccount: true } : undefined}
                     className="text-indigo-600 dark:text-indigo-400 font-medium hover:text-indigo-700 dark:hover:text-indigo-300 transition-colors"
                 >
                     Create one free

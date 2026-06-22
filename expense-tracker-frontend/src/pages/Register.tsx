@@ -1,6 +1,6 @@
 // src/pages/auth/RegisterPage.tsx
 import React, { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { Eye, EyeOff, ArrowRight, UserPlus, Check } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/hooks/redux";
@@ -139,6 +139,9 @@ export default function Register() {
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirm, setShowConfirm] = useState(false);
 
+    const location = useLocation();
+    const isAddingAccount = Boolean(location.state?.addAccount);
+
     const { register, handleSubmit, watch, formState: { errors }, } = useForm<RegisterFormData>({
         resolver: zodResolver(registerSchema),
         mode: "onBlur",
@@ -150,16 +153,22 @@ export default function Register() {
 
     const onSubmit = async (data: RegisterFormData) => {
         dispatch(clearError());
-        console.log("form error:",apiError)
+        console.log("form error:", apiError)
         const result = await dispatch(
             createUser({
                 full_name: data.full_name,
-                phone:data.phone,
+                phone: data.phone,
                 email: data.email,
                 password: data.password,
             } as any));
         if (createUser.fulfilled.match(result)) {
-            navigate("/login", { replace: true, state: { registered: true } });
+            navigate("/login", {
+                replace: true,
+                state: {
+                    registered: true,
+                    ...(isAddingAccount && { addAccount: true }),
+                },
+            });
         }
     };
 
@@ -370,6 +379,7 @@ export default function Register() {
                 Already have an account?{" "}
                 <Link
                     to="/login"
+                    state={isAddingAccount ? { addAccount: true } : undefined}
                     className="text-indigo-600 dark:text-indigo-400 font-medium hover:text-indigo-700 dark:hover:text-indigo-300 transition-colors"
                 >
                     Sign in

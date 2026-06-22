@@ -24,22 +24,6 @@ const accountsSlice = createSlice({
     name: "accounts",
     initialState: INITIAL_STATE,
     reducers: {
-        addAccount: (state, action: PayloadAction<User>) => {
-            const user = action.payload;
-            const id = user.id;
-            const exists = state.accounts.find(a => a.id === id);
-
-            if (exists) {
-                // refresh user data on re-login
-                exists.user = user;
-                state.activeAccountId = id;
-                return;
-            }
-
-            state.accounts.push({ id, user, token: '' });
-            state.activeAccountId = id;
-        },
-
         switchAccount: (state, action: PayloadAction<string>) => {
             state.activeAccountId = action.payload;
         },
@@ -65,31 +49,42 @@ const accountsSlice = createSlice({
             if (exists) {
                 exists.user = user;
                 exists.token = token;
-                state.activeAccountId = id;
             } else {
                 state.accounts.push({ id, user, token });
-                state.activeAccountId = id;
+            }
+            // Always switch to the just-logged-in account
+            state.activeAccountId = id;
+        });
+
+        builder.addCase(viewProfile.fulfilled, (state, action) => {
+            const user = action.payload?.findUser ?? action.payload;
+            if (!user?.id) return;
+            const account = state.accounts.find(a => a.id === user.id);
+            if (account) {
+                account.user = user;
             }
         });
-        builder.addCase(viewProfile.fulfilled, (state, action) => {
-        const user = action.payload?.findUser ?? action.payload;
-        if (!user?.id) return;
-        const account = state.accounts.find(a => a.id === user.id);
-        if (account) {
-            account.user = user; // update user data only, don't touch activeAccountId
-        }
-    });
     },
 });
 
-export const { addAccount, switchAccount, removeAccount, updateAccountUser } = accountsSlice.actions;
+export const { switchAccount, removeAccount, updateAccountUser } = accountsSlice.actions;
 export default accountsSlice.reducer;
 
 // Selectors
-export const selectAllAccounts = (state: RootState) => (state.accounts as unknown as AccountsState).accounts;
+export const selectAllAccounts = (state: RootState) =>
+    (state.accounts as unknown as AccountsState).accounts;
 
-export const selectActiveAccountId = (state: RootState) => (state.accounts as unknown as AccountsState).activeAccountId;
+export const selectActiveAccountId = (state: RootState) =>
+    (state.accounts as unknown as AccountsState).activeAccountId;
+
 export const selectActiveAccount = (state: RootState) => {
     const accounts = state.accounts as unknown as AccountsState;
     return accounts.accounts.find(a => a.id === accounts.activeAccountId) ?? null;
-}
+};
+
+// Derive isAuthenticated from accountsSlice so it stays in sync after account switch
+export const selectIsAuthenticatedFromAccounts = (state: RootState) => {
+    const accounts = state.accounts as unknown as AccountsState;
+    const active = accounts.accounts.find(a => a.id === accounts.activeAccountId);
+    return !!active?.token;
+};
