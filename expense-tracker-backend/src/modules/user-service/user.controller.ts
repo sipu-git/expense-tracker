@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { createUser, getUserById, loginUser, modifyProfile, signedOutuser } from "./user.service.js";
+import { createUser, dropProfile, getUserById, loginUser, modifyProfile, signedOutuser } from "./user.service.js";
 import { errorResponse, successResponse } from "../../shared/util/ApiResponses.js";
 import { modifyUserSchema } from "./user.validation.js";
 
@@ -20,7 +20,7 @@ export const signInUser = async (req: Request, res: Response) => {
                 sameSite: isProduction ? "none" : "lax",
                 maxAge: 15 * 24 * 60 * 60 * 1000, // 15 days
         });
-        return res.status(200).json(successResponse("User logged in successfully", findUser));
+        return res.status(200).json(successResponse("User logged in successfully", { findUser, token }));
 }
 
 export const logOutUser = async (req: Request, res: Response) => {
@@ -60,4 +60,13 @@ export const updateProfile = async (req: Request, res: Response) => {
         const responseData = parsedInfos.data;
         const results = await modifyProfile(userId, responseData)
         return res.status(200).json(successResponse("User profile updated successfully", results));
+}
+
+export const removeProfile = async (req: Request, res: Response) => {
+        const userId = req.user?.id;
+        if (!userId) {
+                return res.status(400).json(errorResponse("Unauthrozed user!"))
+        }
+        const response = await dropProfile(userId)
+        return res.status(201).json(successResponse("Account removed successfully!", response))
 }

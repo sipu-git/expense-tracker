@@ -2,7 +2,7 @@ model Expenses {
   id         String      @id @default(uuid())
   name       String
   amount     Decimal
-  quantity   String
+  quantity   String?
   bought_at  DateTime
   type       ExpenseType
   created_by String

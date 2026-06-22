@@ -1,0 +1,13 @@
+model PushNotification {
+  id         String   @id @default(uuid())
+  user_id    String   @db.VarChar(50)
+  endpoint   String   @unique
+  p256dh     String
+  auth       String
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  user User @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([user_id])
+}

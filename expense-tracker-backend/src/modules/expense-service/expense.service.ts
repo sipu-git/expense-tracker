@@ -5,6 +5,12 @@ import { ExpenseFilter, getExpenseDateRange } from "../../shared/util/expenses.u
 import { CreateExpenseInputs } from "./expenses.validation.js";
 
 export async function createExpenses(data: CreateExpenseInputs, userId: string) {
+    const exactData = new Date(data.bought_at)
+    const today = new Date()
+
+    if (exactData > today) {
+        throw new AppError("Expense cann't added for future time!", 400)
+    }
     return await prisma.$transaction(async (tx: any) => {
         if (data.groupId) {
             const member = await tx.groupMembers.findFirst({
@@ -22,13 +28,16 @@ export async function createExpenses(data: CreateExpenseInputs, userId: string) 
                 name: data.name,
                 amount: data.amount,
                 type: data.type,
-                quantity: data.quantity,
+                quantity: data.quantity ?? null,
                 bought_at: new Date(data.bought_at),
                 created_by: userId,
                 groupId: data.groupId
             }
         })
         return expenses;
+    },{
+        maxWait:5000,
+        timeout:10000
     })
 }
 
@@ -67,7 +76,7 @@ export async function viewAllExpenses(userId: string) {
         orderBy: {
             created_at: "desc"
         }
-    })
+    },)
 }
 
 export async function ViewExpenseById(expenseId: string, userId: string) {

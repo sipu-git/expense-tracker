@@ -12,6 +12,6 @@ model User {
   sender     GroupInvite[]  @relation("InviteSender")
   receiver   GroupInvite[]  @relation("InviteReceiver")
   members    GroupMembers[]
-
+  notification  PushNotification[]
   @@index([email])
 }

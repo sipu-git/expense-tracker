@@ -12,7 +12,7 @@ export const createExpenseSchema = z.object({
     }, { message: "Price must be a positive decimal value" }),
     type: z.nativeEnum(ExpenseType),
     quantity: z.string().trim().min(1, "Quantity must be at least 1 character long")
-        .max(50, "Quantity cannot exceed 50 characters"),
+        .max(50, "Quantity cannot exceed 50 characters").optional(),
     bought_at: z.string().datetime("Invalid date format"),
     groupId: z.string().uuid("Invalid group id").optional(),
 })
