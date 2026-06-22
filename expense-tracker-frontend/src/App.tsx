@@ -1,6 +1,6 @@
 // src/App.tsx
 
-import React, { useEffect } from "react";
+import React, { useEffect, useRef } from "react";
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { useAppDispatch, useAppSelector } from "./hooks/redux";
 import { selectHydrating, selectIsAuthenticated, setHydrate, viewProfile } from "./store/slices/userSlices/user.slice";
@@ -36,9 +36,17 @@ export default function App() {
   const isAuthenticated = useAppSelector(selectIsAuthenticated);
   const hydrating = useAppSelector(selectHydrating);
   const activeAccount = useAppSelector(selectActiveAccount)
+  const profileRequestedFor = useRef<string | null>(null);
 
   useEffect(() => {
-    if (!activeAccount?.id) return;
+    if (!activeAccount?.id) {
+      dispatch(setHydrate());
+      profileRequestedFor.current = null;
+      return;
+    }
+
+    if (profileRequestedFor.current === activeAccount.id) return;
+    profileRequestedFor.current = activeAccount.id;
     dispatch(viewProfile());
   }, [dispatch, activeAccount?.id]);
 

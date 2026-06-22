@@ -1,6 +1,6 @@
 // src/components/layout/AppLayout.tsx
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { Outlet } from "react-router-dom";
 import { useAppDispatch, useAppSelector } from "@/hooks/redux";
 import { selectTheme, selectSidebarOpen } from "@/store/slices/uiSlice";
@@ -18,9 +18,12 @@ export default function AppLayout() {
   const theme = useAppSelector(selectTheme);
   const sidebarOpen = useAppSelector(selectSidebarOpen);
   const activeAccountId = useAppSelector(selectActiveAccountId);
+  const loadedAccountId = useRef<string | null>(null);
 
   useEffect(() => {
-    // setActiveApiAccountId(activeAccountId);
+    if (!activeAccountId || loadedAccountId.current === activeAccountId) return;
+
+    loadedAccountId.current = activeAccountId;
     dispatch(viewExpenses());
     dispatch(viewGroups());
     dispatch(viewInvitations());
