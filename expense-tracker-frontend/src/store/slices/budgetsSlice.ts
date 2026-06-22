@@ -6,48 +6,71 @@ import { RootState } from '../index';
 import { selectCategoryTotals } from './expensesSlice';
 
 const STORAGE_KEY = 'expense_tracker_budgets';
+const DEFAULT_ACCOUNT_KEY = '__default__';
 
-function load(): Budget[] {
+type BudgetByAccount = Record<string, Budget[]>;
+type BudgetPayload = Budget & { accountId?: string | null };
+type RemoveBudgetPayload = { category: Category; accountId?: string | null };
+
+const accountKey = (accountId?: string | null) => accountId ?? DEFAULT_ACCOUNT_KEY;
+
+function load(): BudgetByAccount {
   try {
     const s = localStorage.getItem(STORAGE_KEY);
-    if (s) return JSON.parse(s);
+    if (s) {
+      const parsed = JSON.parse(s);
+      if (Array.isArray(parsed)) return { [DEFAULT_ACCOUNT_KEY]: parsed };
+      if (parsed && typeof parsed === 'object' && parsed.byAccountId) return parsed.byAccountId;
+      if (parsed && typeof parsed === 'object') return parsed;
+    }
   } catch { }
-  return sampleBudgets;
+  return { [DEFAULT_ACCOUNT_KEY]: sampleBudgets };
 }
 
-function persist(items: Budget[]) {
-  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(items)); } catch { }
+function persist(byAccountId: BudgetByAccount) {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify({ byAccountId })); } catch { }
 }
 
 interface BudgetsState {
-  items: Budget[];
+  byAccountId: BudgetByAccount;
 }
 
 const budgetsSlice = createSlice({
   name: 'budgets',
-  initialState: { items: load() } as BudgetsState,
+  initialState: { byAccountId: load() } as BudgetsState,
   reducers: {
-    setBudget(state, action: PayloadAction<Budget>) {
+    setBudget(state, action: PayloadAction<BudgetPayload>) {
+      const key = accountKey(action.payload.accountId);
+      const items = state.byAccountId[key] ?? [];
       const budget = {
         category: action.payload.category,
         limit: action.payload.limit,
         period: action.payload.period,
       };
-      const idx = state.items.findIndex((b) => b.category === budget.category);
-      if (idx !== -1) state.items[idx] = budget;
-      else state.items.push(budget);
-      persist(state.items);
+      const idx = items.findIndex((b) => b.category === budget.category);
+      if (idx !== -1) items[idx] = budget;
+      else items.push(budget);
+      state.byAccountId[key] = items;
+      persist(state.byAccountId);
     },
-    removeBudget(state, action: PayloadAction<{ category: Category }>) {
-      state.items = state.items.filter((b) => b.category !== action.payload.category);
-      persist(state.items);
+    removeBudget(state, action: PayloadAction<RemoveBudgetPayload>) {
+      const key = accountKey(action.payload.accountId);
+      state.byAccountId[key] = (state.byAccountId[key] ?? []).filter((b) => b.category !== action.payload.category);
+      persist(state.byAccountId);
     },
   },
 });
 
 export const { setBudget, removeBudget } = budgetsSlice.actions;
 
-export const selectBudgets = (state: RootState) => state.budgets.items;
+const selectActiveAccountId = (state: RootState) =>
+  (state.accounts as unknown as { activeAccountId: string | null }).activeAccountId;
+
+export const selectBudgets = createSelector(
+  (state: RootState) => state.budgets.byAccountId,
+  selectActiveAccountId,
+  (byAccountId, activeAccountId) => byAccountId[accountKey(activeAccountId)] ?? []
+);
 
 export const selectBudgetStatus = createSelector(
   selectBudgets,

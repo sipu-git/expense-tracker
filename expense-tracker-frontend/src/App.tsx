@@ -1,7 +1,7 @@
 // src/App.tsx
 
 import React, { useEffect } from "react";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { useAppDispatch, useAppSelector } from "./hooks/redux";
 import { selectHydrating, selectIsAuthenticated, setHydrate, viewProfile } from "./store/slices/userSlices/user.slice";
 import Login from "./pages/Login";
@@ -17,27 +17,39 @@ import ForgotPasswordEmail from "./pages/auth/ForgotPswdPage";
 import VerifyPasswordOtp from "./pages/auth/VerifyOtpPage";
 import ResetPassword from "./pages/auth/ResetPasswordPage";
 import AddExpensePage from "./pages/expenses/AddExpenses";
+import { selectActiveAccount } from "./store/slices/accountSlices/account.slice";
 // import AppLayout from "./components/layout/AppLayout";
+
+function LoginRoute({ isAuthenticated }: { isAuthenticated: boolean }) {
+  const location = useLocation();
+  const isAddingAccount = Boolean(location.state?.addAccount);
+
+  if (isAuthenticated && !isAddingAccount) {
+    return <Navigate to="/dashboard" replace />;
+  }
+
+  return <Login />;
+}
 
 export default function App() {
   const dispatch = useAppDispatch();
-
-  const isAuthenticated = useAppSelector(
-    selectIsAuthenticated
-  );
-
-  const hydrating = useAppSelector(
-    selectHydrating
-  );
+  const isAuthenticated = useAppSelector(selectIsAuthenticated);
+  const hydrating = useAppSelector(selectHydrating);
+  const activeAccount = useAppSelector(selectActiveAccount)
 
   useEffect(() => {
+    if (!activeAccount?.id) return;
     dispatch(viewProfile());
-  }, [dispatch]);
+  }, [dispatch, activeAccount?.id]);
 
   if (hydrating) {
     return (
       <div className="h-screen flex items-center justify-center">
-        Loading...
+        <div className="w-12 text-[#0397f4]">
+          <svg fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><circle cx="4" cy="12" r="3">
+            <animate id="spinner_jObz" begin="0;spinner_vwSQ.end-0.25s" attributeName="r" dur="0.75s" values="3;.2;3">
+            </animate></circle><circle cx="12" cy="12" r="3">
+              <animate begin="spinner_jObz.end-0.6s" attributeName="r" dur="0.75s" values="3;.2;3"></animate></circle><circle cx="20" cy="12" r="3"><animate id="spinner_vwSQ" begin="spinner_jObz.end-0.45s" attributeName="r" dur="0.75s" values="3;.2;3"></animate></circle></svg></div>
       </div>
     );
   }
@@ -56,11 +68,7 @@ export default function App() {
 
         <Route
           path="/login"
-          element={
-            isAuthenticated
-              ? <Navigate to="/dashboard" replace />
-              : <Login />
-          }
+          element={<LoginRoute isAuthenticated={isAuthenticated} />}
         />
 
         <Route

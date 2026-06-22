@@ -5,10 +5,15 @@ import {
   Shield, Bell, CreditCard, TrendingUp,
   Edit3, Check, X, Upload, Award,
   Activity, DollarSign, Target,
+  AlertTriangle,
 } from 'lucide-react';
 import { useAppDispatch, useAppSelector } from '@/hooks/redux';
 import { formatDate } from '@/hooks/use-format';
-import { clearError, modifyUserProfile } from '@/store/slices/userSlices/user.slice';
+import { clearError, modifyUserProfile, removeAccount } from '@/store/slices/userSlices/user.slice';
+import { selectMonthExpenses, selectMonthTotal } from '@/store/slices/expensesSlice';
+import { formatCurrency } from '@/utils';
+import { selectBudgetStatus } from '@/store/slices/budgetsSlice';
+import { Link, useNavigate } from 'react-router-dom';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -16,22 +21,22 @@ interface EditableField {
   field: 'full_name' | 'phone' | 'email' | 'bio' | null;
 }
 
-// ── Stat card ─────────────────────────────────────────────────────────────────
-
 function StatCard({
   icon: Icon,
   label,
   value,
+  route,
   sub,
   color,
 }: {
   icon: React.ElementType;
   label: string;
   value: string;
+  route?: string;
   sub: string;
   color: string;
 }) {
-  return (
+  const content = (
     <div className="card flex items-start gap-3 p-4">
       <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${color}`}>
         <Icon size={18} className="text-white" />
@@ -43,6 +48,8 @@ function StatCard({
       </div>
     </div>
   );
+
+  return route ? <Link to={route}>{content}</Link> : content;
 }
 
 // ── Inline editable field ─────────────────────────────────────────────────────
@@ -128,6 +135,9 @@ function Badge({ label, color }: { label: string; color: string }) {
 
 export default function Profile() {
   const { user, error, loading } = useAppSelector((state) => state.user);
+  const monthExpenses = useAppSelector(selectMonthExpenses);
+  const totalAmount = useAppSelector(selectMonthTotal)
+  const budgetStatus = useAppSelector(selectBudgetStatus);
   const dispatch = useAppDispatch()
   // Local editable state (wire to dispatch/API as needed)
   const [form, setForm] = useState({
@@ -136,14 +146,26 @@ export default function Profile() {
     phone: user?.phone ?? '',
     created_at: user?.created_at ?? '',
     bio: '',
-    // location: user?.location ?? '',
-    // bio:      user?.bio      ?? '',
   });
 
   const [editing, setEditing] = useState<EditableField['field']>(null);
   const [draft, setDraft] = useState('');
   const [saved, setSaved] = useState(false);
   const [fieldError, setFieldError] = useState<string | null>(null);
+  const navigate = useNavigate()
+  const [displayConfirmBox, setDisplayConfirmBox] = useState(false)
+  const [deleteConfirmText, setDeleteConfirmText] = useState('')
+  const [dropLoading, setDropLoading] = useState(false)
+
+  const handleDeleteAccount = async () => {
+    if (deleteConfirmText !== 'Delete my account') return;
+    setDropLoading(true)
+    const result = await dispatch(removeAccount());
+    if (removeAccount.fulfilled.match(result)) {
+      navigate('/login');
+    }
+    setDropLoading(false)
+  }
 
   //   const [avatarSrc, setAvatarSrc] = useState<string | null>(user?.avatarUrl ?? null);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -206,10 +228,14 @@ export default function Profile() {
     setTimeout(() => setSaved(false), 2000);
   }
 
+  const budgetLimits = budgetStatus.filter((a) => a.isNearLimit)
   const stats = [
-    // { icon: DollarSign, label: 'Total spent',    value: formatCurrency(4280),  sub: 'This month',    color: 'bg-accent'       },
-    { icon: Target, label: 'Budgets active', value: '5', sub: '2 near limit', color: 'bg-violet-500' },
-    { icon: Activity, label: 'Transactions', value: '128', sub: 'Last 30 days', color: 'bg-emerald-500' },
+    {
+      icon: Target, label: 'Budgets active', value: `${budgetStatus.length}`,
+      sub: budgetLimits.length > 0 ? `${budgetLimits.length} near limit` : 'All within limit',
+      color: 'bg-violet-500', route: '/budgets'
+    },
+    { icon: Activity, label: 'Transactions', value: formatCurrency(totalAmount), sub: `${monthExpenses.length} Transactions`, color: 'bg-emerald-500', route: '/expenses' },
     { icon: TrendingUp, label: 'Saved vs last', value: '+12%', sub: 'Month on month', color: 'bg-amber-500' },
   ];
 
@@ -256,9 +282,9 @@ export default function Profile() {
               /> */}
             </div>
 
-            <div className="flex items-center gap-2 flex-wrap">
-              <Badge label="Pro member" color="bg-accent/10 text-accent" />
-              <Badge label="Verified" color="bg-emerald-500/10 text-emerald-600" />
+            <div className="flex items-center gap-2">
+              {/* <Badge label="Pro member" color="bg-accent/10 text-accent" />
+              <Badge label="Verified" color="bg-emerald-500/10 text-emerald-600" /> */}
               {saved && (
                 <Badge label="✓ Saved" color="bg-emerald-500/10 text-emerald-600" />
               )}
@@ -332,7 +358,7 @@ export default function Profile() {
               <p className="text-xs text-red-700 dark:text-red-300">{fieldError ?? error}</p>
             </div>
           )}
-          <div className="divide-y divide-border">
+          <div className="">
             <EditableRow
               icon={Edit3} label="Full name"
               value={editing === 'full_name' ? draft : form.full_name}
@@ -396,7 +422,7 @@ export default function Profile() {
                   <p className="text-xs text-muted">Last changed 3 months ago</p>
                 </div>
               </div>
-              <button className="text-xs font-semibold text-accent hover:underline">
+              <button onClick={() => navigate("/send-otp")} className="text-xs font-semibold text-accent hover:underline">
                 Change
               </button>
             </div>
@@ -461,12 +487,92 @@ export default function Profile() {
             <Upload size={14} />
             Export all my data
           </button>
-          <button className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium border border-red-500/30 text-red-500 hover:bg-red-500/10 transition-colors">
+          <button
+            onClick={() => setDisplayConfirmBox(true)}
+            className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium border border-red-500/30 text-red-500 hover:bg-red-500/10 transition-colors">
             <X size={14} />
             Delete account
           </button>
         </div>
       </div>
+      {displayConfirmBox && (
+        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
+          <div className="bg-card w-full max-w-md rounded-2xl border border-border overflow-hidden shadow-xl">
+            {/* Header */}
+            <div className="bg-red-50 dark:bg-red-950/40 px-6 py-4 border-b border-red-200 dark:border-red-900/50 flex items-start gap-3">
+              <div className="w-9 h-9 rounded-full bg-red-200 dark:bg-red-900 flex items-center justify-center flex-shrink-0 mt-0.5">
+                <AlertTriangle size={18} className="text-red-700 dark:text-red-300" />
+              </div>
+              <div>
+                <p className="font-semibold text-red-900 dark:text-red-100">Delete your account</p>
+                <p className="text-xs text-red-600 dark:text-red-400 mt-0.5">This action is permanent and cannot be undone</p>
+              </div>
+            </div>
+
+            {/* Body */}
+            <div className="px-6 py-5">
+              <p className="text-xs text-muted mb-4 leading-relaxed">Before you proceed, please read and acknowledge the following:</p>
+
+              <ul className="space-y-2 mb-5">
+                {[
+                  { label: 'All data will be erased.', detail: 'Transactions, budgets, categories, and settings are permanently deleted.' },
+                  { label: 'No recovery possible.', detail: 'Your account cannot be restored once deleted.' },
+                  { label: 'Active subscriptions cancelled.', detail: 'Pro plan billing is cancelled immediately. Refunds follow our refund policy.' },
+                  { label: 'Shared data removed.', detail: 'Any reports shared with other users will become inaccessible.' },
+                ].map(({ label, detail }) => (
+                  <li key={label} className="flex items-start gap-2.5 text-xs bg-hover rounded-xl p-3">
+                    <X size={13} className="text-red-500 flex-shrink-0 mt-0.5" />
+                    <p className="text-text leading-relaxed">
+                      <span className="font-semibold">{label}</span> {detail}
+                    </p>
+                  </li>
+                ))}
+              </ul>
+
+              {/* Confirm input */}
+              <div className="mb-5">
+                <label className="block text-xs text-muted mb-1.5">
+                  Type <code className="bg-hover text-red-500 px-1.5 py-0.5 rounded text-[11px]">DELETE</code> to confirm
+                </label>
+                <input
+                  type="text"
+                  value={deleteConfirmText}
+                  onChange={(e) => setDeleteConfirmText(e.target.value)}
+                  placeholder="Type DELETE here"
+                  className="w-full text-sm bg-hover border border-red-500/30 focus:border-red-500 rounded-xl px-3 py-2 outline-none transition-colors text-text"
+                />
+              </div>
+
+              {/* Actions */}
+              <div className="flex gap-3">
+                <button
+                  onClick={() => { setDisplayConfirmBox(false); setDeleteConfirmText(''); }}
+                  className="flex-1 px-4 py-2.5 rounded-xl text-sm font-medium border border-border text-text hover:bg-hover transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleDeleteAccount}
+                  disabled={deleteConfirmText !== 'Delete my account' || dropLoading}
+                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium bg-red-500 text-white hover:bg-red-600 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+                >
+                  {dropLoading
+                    ? <span className="w-4 h-4 rounded-full border-2 border-white/30 border-t-white animate-spin" />
+                    : <><X size={14} /> Delete my account</>
+                  }
+                </button>
+              </div>
+
+              <p className="text-[11px] text-muted text-center mt-3">
+                By confirming, you agree to our{' '}
+                <span className="text-accent hover:underline cursor-pointer">Terms of Service</span>
+                {' '}and{' '}
+                <span className="text-accent hover:underline cursor-pointer">Privacy Policy</span>.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

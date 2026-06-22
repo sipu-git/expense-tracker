@@ -11,8 +11,9 @@ import { toggleSidebar, toggleTheme, selectTheme } from '../../store/slices/uiSl
 import { selectFilteredExpenses } from '../../store/slices/expensesSlice';
 import { exportToCSV } from '../../utils';
 import { format } from 'date-fns';
-import { selectIsAuthenticated, signOutUser } from '@/store/slices/userSlices/user.slice';
+import { clearUser, selectIsAuthenticated, setUser, signOutUser } from '@/store/slices/userSlices/user.slice';
 import { useSelector } from 'react-redux';
+import { removeAccount, selectActiveAccount, selectAllAccounts, switchAccount } from '@/store/slices/accountSlices/account.slice';
 
 type NotifKind = 'alert' | 'info' | 'success';
 
@@ -27,26 +28,26 @@ interface Notification {
 
 // ── Demo notifications ────────────────────────────────────────────────────────
 
-const DEMO_NOTIFICATIONS: Notification[] = [
-  {
-    id: '1', kind: 'alert',
-    title: 'Budget limit reached',
-    body: 'Food & Dining is at 95% of your monthly budget.',
-    time: '2m ago', read: false,
-  },
-  {
-    id: '2', kind: 'info',
-    title: 'Monthly report ready',
-    body: 'Your June spending summary is available to download.',
-    time: '1h ago', read: false,
-  },
-  {
-    id: '3', kind: 'success',
-    title: 'Export complete',
-    body: 'expenses-2025-06.csv was downloaded successfully.',
-    time: 'Yesterday', read: true,
-  },
-];
+// const DEMO_NOTIFICATIONS: Notification[] = [
+//   {
+//     id: '1', kind: 'alert',
+//     title: 'Budget limit reached',
+//     body: 'Food & Dining is at 95% of your monthly budget.',
+//     time: '2m ago', read: false,
+//   },
+//   {
+//     id: '2', kind: 'info',
+//     title: 'Monthly report ready',
+//     body: 'Your June spending summary is available to download.',
+//     time: '1h ago', read: false,
+//   },
+//   {
+//     id: '3', kind: 'success',
+//     title: 'Export complete',
+//     body: 'expenses-2025-06.csv was downloaded successfully.',
+//     time: 'Yesterday', read: true,
+//   },
+// ];
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -183,7 +184,7 @@ function NotifPanel({ items, onMarkRead, onClearAll, onClose }: NotifPanelProps)
 interface ProfileDropdownProps {
   user: { full_name?: string; email?: string; avatarUrl?: string } | null;
   onClose: () => void;
-  onNavigate: (path: string) => void;
+  onNavigate: (path: string, options?: { state?: any }) => void;
   onLogout: () => Promise<void>;
   isLoggingOut?: boolean;
 }
@@ -195,43 +196,66 @@ function ProfileDropdown({
   onLogout,
   isLoggingOut = false
 }: ProfileDropdownProps) {
+  const dispatch = useAppDispatch();
+  // const navigate = useNavigate();
+  const accounts = useSelector(selectAllAccounts);
+  const activeAccount = useSelector(selectActiveAccount);
+
+  const handleSwitch = (id: string) => {
+    if (id === activeAccount?.id) { onClose(); return; }
+    const targetAccount = accounts.find(a => a.id === id);
+    if (!targetAccount) return;
+
+    dispatch(switchAccount(id));
+    dispatch(setUser(targetAccount.user));
+    onClose();
+  };
+
+  const handleRemoveAccount = (e: React.MouseEvent, id: string) => {
+    e.stopPropagation();
+    const removingActiveAccount = id === activeAccount?.id;
+    const nextAccount = accounts.find(a => a.id !== id);
+
+    dispatch(removeAccount(id));
+
+    if (removingActiveAccount && nextAccount) {
+      dispatch(setUser(nextAccount.user));
+    }
+
+    if (removingActiveAccount && !nextAccount) {
+      dispatch(clearUser());
+      onClose();
+      onNavigate("/login");
+    }
+  };
+
   return (
-    <div className="absolute right-0 top-full mt-2 w-56 z-[100] bg-card border border-border rounded-2xl shadow-xl overflow-hidden">
-      {/* User info */}
+    <div className="absolute right-0 top-full mt-2 w-64 z-[100] bg-card border border-border rounded-2xl shadow-xl overflow-hidden">
+
+      {/* ── Active user info ── */}
       <div className="px-4 py-3 border-b border-border">
         <p className="text-sm font-semibold text-text truncate">{user?.full_name ?? 'User'}</p>
         <p className="text-xs text-muted truncate mt-0.5">{user?.email ?? ''}</p>
       </div>
 
-      {/* Actions */}
-      <div className="py-1">
+      {/* ── Menu actions ── */}
+      <div className="py-1 border-b border-border">
         <button
-          onClick={() => {
-            onClose();
-            onNavigate('/view-profile');
-          }}
+          onClick={() => { onClose(); onNavigate('/view-profile'); }}
           className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-text hover:bg-hover transition-colors"
         >
           <User size={15} className="text-muted flex-shrink-0" />
           View profile
         </button>
-
         <button
-          onClick={() => {
-            onClose();
-            onNavigate('/groups');
-          }}
+          onClick={() => { onClose(); onNavigate('/groups'); }}
           className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-text hover:bg-hover transition-colors"
         >
           <User size={15} className="text-muted flex-shrink-0" />
           View Groups
         </button>
-
         <button
-          onClick={() => {
-            onClose();
-            onNavigate('/settings');
-          }}
+          onClick={() => { onClose(); onNavigate('/settings'); }}
           className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-text hover:bg-hover transition-colors"
         >
           <Settings size={15} className="text-muted flex-shrink-0" />
@@ -239,13 +263,68 @@ function ProfileDropdown({
         </button>
       </div>
 
-      {/* Divider + Sign out */}
-      <div className="border-t border-border py-1">
+      {/* ── Other profiles (Chrome-style) ── */}
+      {accounts.length > 0 && (
+        <div className="py-2 border-b border-border">
+          <p className="px-4 pb-1.5 text-xs font-semibold text-muted uppercase tracking-wider">
+            Other profiles
+          </p>
+
+          {accounts.map(account => {
+            if (!account.id) return null;
+            const isActive = account.id === activeAccount?.id;
+            const initials = account.user.full_name?.[0]?.toUpperCase() ?? '?';
+
+            return (
+              <div
+                key={account.id}
+                onClick={() => handleSwitch(account.id)}
+                className={`group flex items-center gap-3 px-4 py-2 cursor-pointer hover:bg-hover transition-colors ${isActive ? 'bg-hover' : ''}`}
+              >
+                {/* Avatar circle */}
+                <div className="w-7 h-7 rounded-full bg-accent/20 flex items-center justify-center flex-shrink-0">
+                  <span className="text-xs font-semibold text-accent">{initials}</span>
+                </div>
+
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm text-text truncate leading-tight">{account.user.full_name}</p>
+                  <p className="text-xs text-muted truncate">{account.user.email}</p>
+                </div>
+
+                {/* Active check */}
+                {isActive && <Check size={13} className="text-accent flex-shrink-0" />}
+
+                {/* Remove — only shows on hover, only for non-active */}
+                {!isActive && (
+                  <button
+                    onClick={(e) => handleRemoveAccount(e, account.id)}
+                    title="Remove account"
+                    className="opacity-0 group-hover:opacity-100 p-0.5 rounded text-muted hover:text-red-400 transition-all flex-shrink-0"
+                  >
+                    <X size={12} />
+                  </button>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* ── Add account ── */}
+      <div className="py-1 border-b border-border">
         <button
-          onClick={async () => {
-            onClose();
-            await onLogout();
-          }}
+          onClick={() => { onClose(); onNavigate('/login', { state: { addAccount: true } }); }}
+          className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-text hover:bg-hover transition-colors"
+        >
+          <Plus size={15} className="text-muted flex-shrink-0" />
+          Add account
+        </button>
+      </div>
+
+      {/* ── Sign out ── */}
+      <div className="py-1">
+        <button
+          onClick={async () => { onClose(); await onLogout(); }}
           disabled={isLoggingOut}
           className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-red-500 hover:bg-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
@@ -256,7 +335,6 @@ function ProfileDropdown({
     </div>
   );
 }
-
 export default function Header() {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
@@ -272,11 +350,11 @@ export default function Header() {
   const profile = useDropdown();
   const accountMenu = useDropdown();
 
-  const [notifs, setNotifs] = useState<Notification[]>(DEMO_NOTIFICATIONS);
-  const unreadCount = notifs.filter((n) => !n.read).length;
+  // const [notifs, setNotifs] = useState<Notification[]>(DEMO_NOTIFICATIONS);
+  // const unreadCount = notifs.filter((n) => !n.read).length;
 
-  const markRead = (id: string) => setNotifs((p) => p.map((n) => n.id === id ? { ...n, read: true } : n));
-  const markAllRead = () => setNotifs((p) => p.map((n) => ({ ...n, read: true })));
+  // const markRead = (id: string) => setNotifs((p) => p.map((n) => n.id === id ? { ...n, read: true } : n));
+  // const markAllRead = () => setNotifs((p) => p.map((n) => ({ ...n, read: true })));
 
   const handleExport = () => {
     exportToCSV(
@@ -369,7 +447,7 @@ export default function Header() {
         </button>
 
         {/* Notifications */}
-        <div ref={notif.ref} className="relative">
+        {/* <div ref={notif.ref} className="relative">
           <button
             onClick={() => { notif.setOpen((p) => !p); profile.setOpen(false); accountMenu.setOpen(false); }}
             disabled={isLoggingOut}
@@ -392,7 +470,7 @@ export default function Header() {
               onClose={() => notif.setOpen(false)}
             />
           )}
-        </div>
+        </div> */}
 
         {/* ── Profile ── */}
         <div ref={profile.ref} className="relative">
@@ -424,7 +502,7 @@ export default function Header() {
             <ProfileDropdown
               user={user}
               onClose={() => profile.setOpen(false)}
-              onNavigate={navigate}
+              onNavigate={(path, options) => navigate(path, options)}
               onLogout={handleLogout}
               isLoggingOut={isLoggingOut}
             />

@@ -6,5 +6,6 @@ export const UserApis = {
     login: (data: any) => api.post(`${subUrl}/login`, data),
     signOut: () => api.post(`${subUrl}/logout`),
     getUser: () => api.get(`${subUrl}/profile`),
-    modifyUser: (data:any) => api.patch(`${subUrl}/modify-profile`,data)
+    modifyUser: (data:any) => api.patch(`${subUrl}/modify-profile`,data),
+    deleteAccount:()=>api.delete(`${subUrl}/drop-profile`)
 }

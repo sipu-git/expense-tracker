@@ -102,6 +102,7 @@ export const selectFilteredExpenses = createSelector(
       if (filters.dateTo && e.date > filters.dateTo) return false;
       if (filters.minAmount != null && e.amount < filters.minAmount) return false;
       if (filters.maxAmount != null && e.amount > filters.maxAmount) return false;
+      if (filters.month && !e.date.startsWith(filters.month)) return false;
       return true;
     });
   }

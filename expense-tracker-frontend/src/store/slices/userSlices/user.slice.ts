@@ -60,6 +60,14 @@ export const modifyUserProfile = createAsyncThunk("user/modifyProfile", async (d
     }
 })
 
+export const removeAccount = createAsyncThunk("user/removeProfile", async (_, { rejectWithValue }) => {
+    try {
+        const response = await UserApis.deleteAccount();
+        return response.data.data;
+    } catch (error) {
+        return rejectWithValue(handleApiError(error))
+    }
+})
 const userSlice = createSlice({
     name: "user",
     initialState: INTITAL_STATES,
@@ -71,6 +79,18 @@ const userSlice = createSlice({
         },
         setHydrate: (state) => {
             state.hydrating = false;
+        },
+        clearUser: (state) => {
+            state.user = null;
+            state.loading = false;
+            state.error = null;
+            state.success = false
+        },
+        setUser: (state, action) => {
+            state.user = action.payload;
+            state.loading = false;
+            state.error = null;
+            state.success = true;
         }
     },
     extraReducers: (builder) => {
@@ -102,7 +122,7 @@ const userSlice = createSlice({
             })
             .addCase(loginUser.fulfilled, (state, action) => {
                 state.loading = false;
-                state.user = action.payload;
+                state.user = action.payload.findUser;
                 state.success = true;
                 state.error = null;
             })
@@ -167,11 +187,30 @@ const userSlice = createSlice({
                 state.error = action.payload as string;
                 state.success = false;
             });
+
+            builder
+            .addCase(removeAccount.pending, (state) => {
+                state.loading = true;
+                state.error = null;
+                state.success = false;
+            })
+            .addCase(removeAccount.fulfilled, (state, action) => {
+                state.loading = false;
+                state.user = action.payload;
+                state.success = true;
+                state.error = null;
+            })
+            .addCase(removeAccount.rejected, (state, action) => {
+                state.loading = false;
+                state.error = action.payload as string;
+                state.success = false;
+            });
+
     }
 })
 export const selectHydrating = (s: RootState) => s.user.hydrating;
 
 export const selectIsAuthenticated = (state: { user: UserState }) => !!state.user.user;
 
-export const { clearError, setHydrate } = userSlice.actions;
+export const { clearError, setHydrate, clearUser, setUser } = userSlice.actions;
 export default userSlice.reducer;

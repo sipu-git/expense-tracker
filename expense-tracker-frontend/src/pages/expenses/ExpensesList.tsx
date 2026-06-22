@@ -1,5 +1,5 @@
 // src/components/expenses/ExpensesList.tsx
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Search, SlidersHorizontal, Plus, ChevronDown, ChevronUp } from 'lucide-react';
 import { useAppSelector, useAppDispatch } from '../../hooks/redux';
 import { selectExpensesByDay, setFilters, clearFilters } from '../../store/slices/expensesSlice';
@@ -8,6 +8,7 @@ import { CATEGORIES, CATEGORY_ICONS, Category } from '../../types';
 import ExpenseRow from './ExpenseRow';
 import { formatCurrency, formatDate, cn } from '../../utils';
 import { useNavigate } from 'react-router-dom';
+import { format, subMonths } from 'date-fns';
 
 export default function ExpensesList() {
   const dispatch = useAppDispatch();
@@ -17,13 +18,25 @@ export default function ExpensesList() {
   const [showFilters, setShowFilters] = useState(false);
   const [expandedDays, setExpandedDays] = useState<Record<string, boolean>>({});
   const navigate = useNavigate();
-  const applyFilters = (s: string, cats: Category[]) => {
-    dispatch(setFilters({ search: s || undefined, categories: cats.length ? cats : undefined }));
+  const [selectMonth, setSelectMonth] = useState(format(new Date(), 'yyyy-MM'))
+
+  const monthOptions = useMemo(() => {
+    return Array.from({ length: 12 }, (_, i) => {
+      const date = subMonths(new Date(), i);
+      return {
+        value: format(date, 'yyyy-MM'),
+        label: format(date, 'MMMM yyyy'),
+      };
+    });
+  }, []);
+
+  const applyFilters = (s: string, cats: Category[], month: string) => {
+    dispatch(setFilters({ search: s || undefined, categories: cats.length ? cats : undefined, month: month || undefined }));
   };
 
   const handleSearch = (val: string) => {
     setSearch(val);
-    applyFilters(val, selectedCats);
+    applyFilters(val, selectedCats, selectMonth);
   };
 
   const toggleCat = (cat: Category) => {
@@ -31,14 +44,21 @@ export default function ExpensesList() {
       ? selectedCats.filter((c) => c !== cat)
       : [...selectedCats, cat];
     setSelectedCats(next);
-    applyFilters(search, next);
+    applyFilters(search, next, selectMonth);
   };
-
+  const handleMonthChange = (month: string) => {
+    setSelectMonth(month);
+    applyFilters(search, selectedCats, month);
+  };
   const handleClear = () => {
     setSearch('');
     setSelectedCats([]);
     dispatch(clearFilters());
   };
+
+  useEffect(() => {
+    applyFilters(search, selectedCats, selectMonth);
+  }, []);
 
   const toggleDay = (date: string) =>
     setExpandedDays((prev) => ({ ...prev, [date]: !prev[date] }));
@@ -59,6 +79,17 @@ export default function ExpensesList() {
               onChange={(e) => handleSearch(e.target.value)}
             />
           </div>
+          <select
+            value={selectMonth}
+            onChange={(e) => handleMonthChange(e.target.value)}
+            className="px-3 py-2 rounded-xl text-sm font-medium border border-border text-text bg-card hover:border-accent/50 transition-all outline-none cursor-pointer"
+          >
+            {monthOptions.map((opt) => (
+              <option key={opt.value} value={opt.value}>
+                {opt.label}
+              </option>
+            ))}
+          </select>
           <button
             onClick={() => setShowFilters(!showFilters)}
             className={cn(

@@ -1,23 +1,35 @@
 import { expenseApis } from "@/services/expenses.service";
 import { Expense, ExpenseStates } from "@/types/expense.type";
 import { handleApiError } from "@/utils/apiError";
+// import { setActiveApiAccountId } from "@/utils/api";
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import type { RootState } from "@/store";
+import { switchAccount } from "../accountSlices/account.slice";
 
 const initialStates: ExpenseStates = {
     expenses: [],
+    activeAccountId: null,
     loading: false,
     error: null,
     success: false,
 };
+
+interface AccountsState {
+    activeAccountId: string | null;
+}
+
+// const selectActiveAccountId = (state: unknown) =>
+//     ((state as RootState).accounts as unknown as AccountsState).activeAccountId ?? null;
 
 // Async Thunks
 export const addExpense = createAsyncThunk(
     "expenses/add",
     async (data: Partial<Expense>, { rejectWithValue, getState }) => {
         try {
+            // const accountId = selectActiveAccountId(getState());
+            // setActiveApiAccountId(accountId);
             const response = await expenseApis.addExpense(data);
-            return response.data.data;
+            return { data: response.data.data };
         } catch (error) {
             return rejectWithValue(handleApiError(error));
         }
@@ -28,8 +40,10 @@ export const viewExpenses = createAsyncThunk(
     "expenses/viewAll",
     async (_, { rejectWithValue, getState }) => {
         try {
+            // const accountId = selectActiveAccountId(getState());
+            // setActiveApiAccountId(accountId);
             const response = await expenseApis.viewExpenses();
-            return response.data.data;
+            return { data: response.data.data };
         } catch (error) {
             return rejectWithValue(handleApiError(error));
         }
@@ -40,8 +54,10 @@ export const viewExpense = createAsyncThunk(
     "expenses/viewById",
     async (expenseId: string, { rejectWithValue, getState }) => {
         try {
+            // const accountId = selectActiveAccountId(getState());
+            // setActiveApiAccountId(accountId);
             const response = await expenseApis.viewExpense(expenseId);
-            return response.data.data;
+            return { data: response.data.data };
         } catch (error) {
             return rejectWithValue(handleApiError(error));
         }
@@ -55,8 +71,10 @@ export const updateExpense = createAsyncThunk(
         { rejectWithValue, getState }
     ) => {
         try {
+            // const accountId = selectActiveAccountId(getState());
+            // setActiveApiAccountId(accountId);
             const response = await expenseApis.updateExpense(expenseId, data);
-            return response.data.data;
+            return { data: response.data.data };
         } catch (error) {
             return rejectWithValue(handleApiError(error));
         }
@@ -67,8 +85,10 @@ export const deleteExpense = createAsyncThunk(
     "expenses/delete",
     async (expenseId: string, { rejectWithValue, getState }) => {
         try {
+            // const accountId = selectActiveAccountId(getState());
+            // setActiveApiAccountId(accountId);
             await expenseApis.deleteExpense(expenseId);
-            return expenseId;
+            return { expenseId };
         } catch (error) {
             return rejectWithValue(handleApiError(error));
         }
@@ -77,8 +97,10 @@ export const deleteExpense = createAsyncThunk(
 
 export const deleteAllExpenses = createAsyncThunk("expenses/removeAll", async (_, { rejectWithValue, getState }) => {
     try {
+        // const accountId = selectActiveAccountId(getState());
+        // setActiveApiAccountId(accountId);
         const response = await expenseApis.removeAllExpense();
-        return response.data.data;
+        return { data: response.data.data };
     } catch (error) {
         return rejectWithValue(handleApiError(error));
     }
@@ -88,8 +110,10 @@ export const filterExpense = createAsyncThunk(
     "expenses/filter",
     async (_, { rejectWithValue, getState }) => {
         try {
-            const response = await expenseApis.filterExpense("month", undefined);
-            return response.data.data;
+            // const accountId = selectActiveAccountId(getState());
+            // setActiveApiAccountId(accountId);
+            const response = await expenseApis.filterExpense("month");
+            return { data: response.data.data,  };
         } catch (error) {
             return rejectWithValue(handleApiError(error));
         }
@@ -113,6 +137,16 @@ export const expenseSlice = createSlice({
         },
     },
     extraReducers: (builder) => {
+        const isCurrentAccount = (state: ExpenseStates, accountId: string | null) =>
+            state.activeAccountId === null || state.activeAccountId === accountId;
+
+        builder
+            .addCase(switchAccount, (state, action) => {
+                state.expenses = [];
+                state.activeAccountId = action.payload;
+                state.loading = false;
+                state.error = null;
+            })
         // Add Expense
         builder
             .addCase(addExpense.pending, (state) => {
@@ -121,8 +155,10 @@ export const expenseSlice = createSlice({
                 state.success = false;
             })
             .addCase(addExpense.fulfilled, (state, action) => {
+                // if (!isCurrentAccount(state, action.payload.accountId)) return;
                 state.loading = false;
-                state.expenses.push(action.payload);
+                // state.activeAccountId = action.payload.accountId;
+                state.expenses.push(action.payload.data);
                 state.success = true;
                 state.error = null;
             })
@@ -139,8 +175,10 @@ export const expenseSlice = createSlice({
                 state.error = null;
             })
             .addCase(viewExpenses.fulfilled, (state, action) => {
+                // if (!isCurrentAccount(state, action.payload.accountId)) return;
                 state.loading = false;
-                state.expenses = action.payload;
+                // state.activeAccountId = action.payload.accountId;
+                state.expenses = action.payload.data;
                 state.error = null;
             })
             .addCase(viewExpenses.rejected, (state, action) => {
@@ -155,14 +193,16 @@ export const expenseSlice = createSlice({
                 state.error = null;
             })
             .addCase(viewExpense.fulfilled, (state, action) => {
+                // if (!isCurrentAccount(state, action.payload.accountId)) return;
                 state.loading = false;
+                // state.activeAccountId = action.payload.accountId;
                 const existingIndex = state.expenses.findIndex(
-                    (e) => e.id === action.payload.id
+                    (e) => e.id === action.payload.data.id
                 );
                 if (existingIndex > -1) {
-                    state.expenses[existingIndex] = action.payload;
+                    state.expenses[existingIndex] = action.payload.data;
                 } else {
-                    state.expenses.push(action.payload);
+                    state.expenses.push(action.payload.data);
                 }
                 state.error = null;
             })
@@ -179,12 +219,14 @@ export const expenseSlice = createSlice({
                 state.success = false;
             })
             .addCase(updateExpense.fulfilled, (state, action) => {
+                // if (!isCurrentAccount(state, action.payload.accountId)) return;
                 state.loading = false;
+                // state.activeAccountId = action.payload.accountId;
                 const index = state.expenses.findIndex(
-                    (e) => e.id === action.payload.id
+                    (e) => e.id === action.payload.data.id
                 );
                 if (index > -1) {
-                    state.expenses[index] = action.payload;
+                    state.expenses[index] = action.payload.data;
                 }
                 state.success = true;
                 state.error = null;
@@ -203,9 +245,10 @@ export const expenseSlice = createSlice({
                 state.success = false;
             })
             .addCase(deleteExpense.fulfilled, (state, action) => {
+                // if (!isCurrentAccount(state, action.payload.accountId)) return;
                 state.loading = false;
                 state.expenses = state.expenses.filter(
-                    (e) => e.id !== action.payload
+                    (e) => e.id !== action.payload.expenseId
                 );
                 state.success = true;
                 state.error = null;
@@ -223,9 +266,11 @@ export const expenseSlice = createSlice({
                 state.success = false;
             })
             .addCase(deleteAllExpenses.fulfilled, (state, action) => {
+                // if (!isCurrentAccount(state, action.payload.accountId)) return;
                 state.loading = false;
+                // state.activeAccountId = action.payload.accountId;
                 state.success = true;
-                state.expenses = action.payload;
+                state.expenses = action.payload.data;
                 state.error = null;
             })
             .addCase(deleteAllExpenses.rejected, (state, action) => {
@@ -241,8 +286,10 @@ export const expenseSlice = createSlice({
                 state.error = null;
             })
             .addCase(filterExpense.fulfilled, (state, action) => {
+                // if (!isCurrentAccount(state, action.payload.accountId)) return;
                 state.loading = false;
-                state.expenses = action.payload;
+                // state.activeAccountId = action.payload.accountId;
+                state.expenses = action.payload.data;
                 state.error = null;
             })
             .addCase(filterExpense.rejected, (state, action) => {

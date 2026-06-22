@@ -1,6 +1,6 @@
 // src/pages/auth/LoginPage.tsx
 import React, { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { Eye, EyeOff, ArrowRight, LogIn } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/hooks/redux";
@@ -8,18 +8,20 @@ import { LoginFormData, loginSchema } from "@/validations/login.validate";
 import { clearError, loginUser, viewProfile } from "@/store/slices/userSlices/user.slice";
 import AuthLayout from "./AuthLayout";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { addAccount } from "@/store/slices/accountSlices/account.slice";
 
 interface FieldProps {
     label: string;
     id: string;
     type?: string;
     placeholder?: string;
+    defaultValue?: string;
     error?: string;
     registration: object;
     suffix?: React.ReactNode;
 }
 
-function Field({ label, id, type = "text", placeholder, error, registration, suffix }: FieldProps) {
+function Field({ label, id, type = "text", defaultValue, placeholder, error, registration, suffix }: FieldProps) {
     return (
         <div className="flex flex-col gap-1.5">
             <label
@@ -33,6 +35,7 @@ function Field({ label, id, type = "text", placeholder, error, registration, suf
                     id={id}
                     type={type}
                     placeholder={placeholder}
+                    defaultValue={defaultValue}
                     autoComplete={type === "password" ? "current-password" : type === "email" ? "email" : undefined}
                     {...registration}
                     className={`w-full h-11 px-4 ${suffix ? "pr-11" : ""} text-sm rounded-xl border bg-white dark:bg-slate-800/50 text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-600 outline-none transition-all duration-200
@@ -76,6 +79,8 @@ export default function Login() {
     const navigate = useNavigate();
     const { loading, error: apiError } = useAppSelector((s) => s.user);
     const [showPassword, setShowPassword] = useState(false);
+    const location = useLocation()
+    const prefillEmail = location.state?.prefillEmail ?? "";
 
     const { register, handleSubmit, formState: { errors } } = useForm<LoginFormData>({
         resolver: zodResolver(loginSchema),
@@ -95,9 +100,9 @@ export default function Login() {
         );
 
         if (loginUser.fulfilled.match(result)) {
-            navigate("/dashboard", {
-                replace: true,
-            });
+            // const { user, token } = result.payload;
+            dispatch(addAccount(result.payload))
+            navigate("/dashboard", { replace: true });
         }
     };
 
@@ -135,6 +140,7 @@ export default function Login() {
                     id="email"
                     type="email"
                     placeholder="you@example.com"
+                    defaultValue={prefillEmail}
                     error={errors.email?.message}
                     registration={register("email")}
                 />

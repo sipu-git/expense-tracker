@@ -5,10 +5,12 @@ import { useAppSelector, useAppDispatch } from '../../hooks/redux';
 import { selectBudgetStatus, setBudget, removeBudget } from '../../store/slices/budgetsSlice';
 import { CATEGORIES, CATEGORY_ICONS, CATEGORY_COLORS, Category } from '../../types';
 import { formatCurrency, cn } from '../../utils';
+import { selectActiveAccountId } from '@/store/slices/accountSlices/account.slice';
 
 export default function Budgets() {
   const dispatch = useAppDispatch();
   const budgetStatus = useAppSelector(selectBudgetStatus);
+  const activeAccountId = useAppSelector(selectActiveAccountId);
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState<{ category: Category; limit: string }>({
     category: 'Food & Dining',
@@ -18,7 +20,7 @@ export default function Budgets() {
   const handleAdd = () => {
     const limit = parseFloat(form.limit);
     if (!limit || limit <= 0) return;
-    dispatch(setBudget({ category: form.category, limit, period: 'monthly' }));
+    dispatch(setBudget({ category: form.category, limit, period: 'monthly', accountId: activeAccountId }));
     setForm({ category: 'Food & Dining', limit: '' });
     setShowForm(false);
   };
@@ -123,7 +125,7 @@ export default function Budgets() {
                   <div className="flex items-center gap-2">
                     <StatusIcon size={16} className={statusColor} />
                     <button
-                      onClick={() => dispatch(removeBudget({ category: b.category }))}
+                      onClick={() => dispatch(removeBudget({ category: b.category, accountId: activeAccountId }))}
                       className="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg hover:bg-red-500/10 text-muted hover:text-red-500 transition-all"
                     >
                       <Trash2 size={13} />

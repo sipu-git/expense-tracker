@@ -1,7 +1,10 @@
 import { groupApis } from "@/services/group.service";
 import { CreateInvite, Group, GroupInvite, GroupMember, GroupStates } from "@/types/group.types";
 import { handleApiError } from "@/utils/apiError";
+// import { setActiveApiAccountId } from "@/utils/api";
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
+import { switchAccount } from "../accountSlices/account.slice";
+import type { RootState } from "@/store";
 
 const initialState: GroupStates = {
     groups: [],
@@ -13,11 +16,17 @@ const initialState: GroupStates = {
     success: false,
 };
 
+// const syncActiveAccount = (state: unknown) => {
+//     const accountId = ((state as RootState).accounts as unknown as { activeAccountId: string | null }).activeAccountId ?? null;
+//     setActiveApiAccountId(accountId);
+// };
+
 // Async Thunks
 export const createGroup = createAsyncThunk(
     "groups/create",
-    async (data: Partial<Group>, { rejectWithValue }) => {
+    async (data: Partial<Group>, { rejectWithValue, getState }) => {
         try {
+            // syncActiveAccount(getState());
             const response = await groupApis.createGroup(data);
             return response.data.data;
         } catch (error) {
@@ -28,8 +37,9 @@ export const createGroup = createAsyncThunk(
 
 export const viewGroups = createAsyncThunk(
     "groups/viewAll",
-    async (_, { rejectWithValue }) => {
+    async (_, { rejectWithValue, getState }) => {
         try {
+            // syncActiveAccount(getState());
             const response = await groupApis.viewGroups();
             return response.data.data;
         } catch (error) {
@@ -40,8 +50,9 @@ export const viewGroups = createAsyncThunk(
 
 export const viewGroup = createAsyncThunk(
     "groups/viewById",
-    async (groupId: string, { rejectWithValue }) => {
+    async (groupId: string, { rejectWithValue, getState }) => {
         try {
+            // syncActiveAccount(getState());
             const response = await groupApis.viewGroup(groupId);
             return response.data.data;
         } catch (error) {
@@ -52,8 +63,9 @@ export const viewGroup = createAsyncThunk(
 
 export const updateGroup = createAsyncThunk(
     "groups/update",
-    async ({ groupId, data }: { groupId: string; data: Partial<Group> }, { rejectWithValue }) => {
+    async ({ groupId, data }: { groupId: string; data: Partial<Group> }, { rejectWithValue, getState }) => {
         try {
+            // syncActiveAccount(getState());
             const response = await groupApis.updateGroup(groupId, data);
             return response.data.data;
         } catch (error) {
@@ -64,8 +76,9 @@ export const updateGroup = createAsyncThunk(
 
 export const sendInvitation = createAsyncThunk(
     "groups/sendInvitation",
-    async ({ groupId, data }: { groupId: string; data: CreateInvite }, { rejectWithValue }) => {
+    async ({ groupId, data }: { groupId: string; data: CreateInvite }, { rejectWithValue, getState }) => {
         try {
+            // syncActiveAccount(getState());
             const response = await groupApis.sendInvitation(groupId, data);
             return response.data.data;
         } catch (error) {
@@ -76,8 +89,9 @@ export const sendInvitation = createAsyncThunk(
 
 export const acceptInvitation = createAsyncThunk(
     "groups/acceptInvitation",
-    async (token: string, { rejectWithValue }) => {
+    async (token: string, { rejectWithValue, getState }) => {
         try {
+            // syncActiveAccount(getState());
             const response = await groupApis.acceptInvitation(token);
             return response.data.data;
         } catch (error) {
@@ -88,8 +102,9 @@ export const acceptInvitation = createAsyncThunk(
 
 export const declineInvitation = createAsyncThunk(
     "groups/declineInvitation",
-    async (groupId: string, { rejectWithValue }) => {
+    async (groupId: string, { rejectWithValue, getState }) => {
         try {
+            // syncActiveAccount(getState());
             const response = await groupApis.declineInvitation(groupId);
             return response.data.data;
         } catch (error) {
@@ -100,8 +115,9 @@ export const declineInvitation = createAsyncThunk(
 
 export const viewInvitations = createAsyncThunk(
     "groups/viewInvitations",
-    async (_, { rejectWithValue }) => {
+    async (_, { rejectWithValue, getState }) => {
         try {
+            // syncActiveAccount(getState());
             const response = await groupApis.viewInvitations();
             return response.data.data;
         } catch (error) {
@@ -112,8 +128,9 @@ export const viewInvitations = createAsyncThunk(
 
 export const viewInvitation = createAsyncThunk(
     "groups/viewInvitationById",
-    async (groupId: string, { rejectWithValue }) => {
+    async (groupId: string, { rejectWithValue, getState }) => {
         try {
+            // syncActiveAccount(getState());
             const response = await groupApis.viewInvitation(groupId);
             return response.data.data;
         } catch (error) {
@@ -124,8 +141,9 @@ export const viewInvitation = createAsyncThunk(
 
 export const searchMembers = createAsyncThunk(
     "groups/searchMembers",
-    async (_, { rejectWithValue }) => {
+    async (_, { rejectWithValue, getState }) => {
         try {
+            // syncActiveAccount(getState());
             const response = await groupApis.searchMembers();
             return response.data.data;
         } catch (error) {
@@ -152,6 +170,16 @@ export const groupSlice = createSlice({
         },
     },
     extraReducers: (builder) => {
+        builder.addCase(switchAccount, (state) => {
+            state.groups = [];
+            state.createInvite = null;
+            state.groupInvite = [];
+            state.groupMember = [];
+            state.loading = false;
+            state.error = null;
+            state.success = false;
+        });
+
         // Create Group
         builder
             .addCase(createGroup.pending, (state) => {

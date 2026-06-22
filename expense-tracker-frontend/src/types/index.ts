@@ -84,6 +84,7 @@ export interface ExpenseFilters {
   minAmount?: number;
   maxAmount?: number;
   search?: string;
+  month?: string;
 }
 
 export interface DailyTotal {

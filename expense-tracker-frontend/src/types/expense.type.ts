@@ -4,7 +4,7 @@ export interface Expense {
     name: string;
     amount: number;
     type :ExpenseTypes;
-    quantity: string;
+    quantity?: string;
     bought_at: string;
     accountId?: string;
     groupId?: string;
@@ -15,6 +15,7 @@ export interface Expense {
 
 export interface ExpenseStates {
     expenses: Expense[];
+    activeAccountId: string | null;
     loading: boolean;
     error: string | null;
     success: boolean;

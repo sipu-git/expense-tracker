@@ -10,20 +10,21 @@ import DeleteModal from "@/pages/expenses/DeleteModal";
 import { cn } from "@/utils";
 import { viewExpenses } from "@/store/slices/expenseSlice/expenses.slice";
 import { viewGroups, viewInvitations } from "@/store/slices/groupSlice/group.slice";
+import { selectActiveAccountId } from "@/store/slices/accountSlices/account.slice";
+// import { setActiveApiAccountId } from "@/utils/api";
 
 export default function AppLayout() {
   const dispatch = useAppDispatch();
   const theme = useAppSelector(selectTheme);
   const sidebarOpen = useAppSelector(selectSidebarOpen);
+  const activeAccountId = useAppSelector(selectActiveAccountId);
 
   useEffect(() => {
+    // setActiveApiAccountId(activeAccountId);
+    dispatch(viewExpenses());
     dispatch(viewGroups());
     dispatch(viewInvitations());
-  }, [dispatch]);
-
-  useEffect(() => {
-    dispatch(viewExpenses());
-  }, [dispatch]);
+  }, [dispatch, activeAccountId]);
 
   return (
     <div className={cn("min-h-screen bg-background text-text font-sans", theme)}>

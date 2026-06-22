@@ -98,7 +98,7 @@ type FormState = {
   name:     string;
   amount:   number | '';
   type:     ExpenseTypes;
-  quantity: string;
+  quantity?: string;
   bought_at: string;
   groupId:  string;
 };
@@ -475,7 +475,7 @@ function ExpenseForm() {
             </div>
           </Field>
 
-          <Field label="Quantity" icon={Hash} error={errors.quantity}>
+          <Field label="Quantity" icon={Hash} error={errors.quantity} optional>
             <input
               type="number"
               min="1"
