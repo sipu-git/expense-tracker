@@ -1,6 +1,6 @@
 import { AppError } from "../../../lib/AppError.js";
 import { prisma } from "../../../lib/prisma.js";
-import { getProfileImageUrl, removeProfileImage, uploadProfileImage } from "../../aws/bucket.service.js";
+import { removeProfileImage, uploadProfileImage } from "../../aws/bucket.service.js";
 import { CreateUserInput, ModifyUserInput } from "./user.validation.js";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
@@ -152,8 +152,9 @@ export async function modifyProfile(userId: string,
                 created_at: true,
             }
         });
-        const profilePicUrl = updatedUser.profilePic ? await getProfileImageUrl(userId) : null;
-        return { ...updatedUser, profilePic:profilePicUrl };
+        // const profilePicUrl = updatedUser.profilePic ? await getProfileImageUrl(userId) : null;
+        // return { ...updatedUser, profilePic:profilePicUrl };
+        return updatedUser;
     })
 }
 
