@@ -1,4 +1,4 @@
-import redis from "../redis.config";
+import redis from "../redis.config.js";
 
 class RedisService {
     async get<T>(key: string): Promise<T | null> {

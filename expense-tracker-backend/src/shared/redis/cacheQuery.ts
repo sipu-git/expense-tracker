@@ -1,4 +1,4 @@
-import redisService from "./services/db-caching.service";
+import redisService from "./services/db-caching.service.js";
 
 export async function cacheQuery<T>(key: string, ttl: number, callback: () => Promise<T>
 ): Promise<T> {

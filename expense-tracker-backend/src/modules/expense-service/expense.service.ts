@@ -36,8 +36,10 @@ export async function createExpenses(data: CreateExpenseInputs, userId: string) 
                 groupId: data.groupId
             }
         })
-        await redisService.delete("expenses:all");
-        await redisService.deleteByPattern("expenses:filters:*");
+        await Promise.all([
+            redisService.delete("expenses:all"),
+            redisService.deleteByPattern("expenses:filters:*"),
+        ])
         return expenses;
     }, {
         maxWait: 5000,
@@ -160,9 +162,11 @@ export async function updateExpenses(expenseId: string, data: CreateExpenseInput
             },
             data
         })
-        await redisService.delete(`expense:${expenseId}`);
-        await redisService.delete("expenses:all");
-        await redisService.deleteByPattern("expenses:filters:*");
+        await Promise.all([
+            redisService.delete(`expense:${expenseId}`),
+            redisService.delete("expenses:all"),
+            redisService.deleteByPattern("expenses:filters:*"),
+        ])
 
         return updatedExpense
     })
@@ -200,10 +204,12 @@ export async function deleteExpense(expenseId: string, userId: string) {
                 id: expenseId
             }
         })
-        await redisService.delete(`expense:${expenseId}`);
-        await redisService.delete("expenses:all");
-        await redisService.deleteByPattern("expenses:filters:*");
-        return deletedExpense
+        await Promise.all([
+            redisService.delete(`expense:${expenseId}`),
+            redisService.delete("expenses:all"),
+            redisService.deleteByPattern("expenses:filters:*"),
+        ])
+        return deletedExpense;
     })
 }
 
@@ -223,8 +229,10 @@ export async function removeAllExpenses(userId: string) {
                 created_by: userId
             }
         })
-        await redisService.delete("expenses:all");
-        await redisService.deleteByPattern("expenses:filters:*");
+        await Promise.all([
+            redisService.delete("expenses:all"),
+            redisService.deleteByPattern("expenses:filters:*"),
+        ])
         return dropAll;
     })
 }
