@@ -3,7 +3,7 @@ import { ShieldCheck, ArrowRight, RotateCcw } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/hooks/redux";
 import AuthLayout from "../AuthLayout";
 import { clearError, sendForgotPasswordOtp, verifyForgotPasswordOtp } from "@/store/slices/authSlice/authSlice";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 
 const OTP_LENGTH = 6;
 
@@ -74,7 +74,11 @@ export default function VerifyPasswordOtp() {
         dispatch(clearError());
         const result = await dispatch(verifyForgotPasswordOtp({ email: email!, otp }));
         if (verifyForgotPasswordOtp.fulfilled.match(result)) {
-            navigate("/reset-new-password", { replace: true });
+            navigate("/reset-new-password", {
+                replace: true, state: {
+                    resetToken: result.payload.resetToken
+                }
+            });
         }
 
     };

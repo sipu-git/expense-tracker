@@ -1,9 +1,11 @@
 export interface User {
-    id:string;
+    id: string;
     full_name: string;
     email: string;
     phone: string;
     password: string;
+    profilePic: string | null;
+    profilePicUrl: string | null;
     created_at: string;
 }
 

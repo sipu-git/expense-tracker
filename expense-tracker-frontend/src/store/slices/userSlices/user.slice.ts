@@ -51,11 +51,21 @@ export const viewProfile = createAsyncThunk("user/profile", async (_, { rejectWi
 })
 
 
-export const modifyUserProfile = createAsyncThunk("user/modifyProfile", async (data: Partial<User>, { rejectWithValue }) => {
+export const modifyUserProfile = createAsyncThunk("user/modifyProfile", async (data: FormData, { rejectWithValue }) => {
     try {
         const response = await UserApis.modifyUser(data);
         return response.data.data;
     } catch (error) {
+        return rejectWithValue(handleApiError(error))
+    }
+})
+
+export const viewProfilePicture = createAsyncThunk("user/profilePic", async (_, { rejectWithValue }) => {
+    try {
+        const user = await UserApis.getProfile();
+        return user.data.data.profilePic;
+    }
+    catch (error) {
         return rejectWithValue(handleApiError(error))
     }
 })
@@ -169,7 +179,25 @@ const userSlice = createSlice({
                 state.user = null;
                 state.error = null;
             });
-
+        builder
+            .addCase(viewProfilePicture.pending, (state) => {
+                state.loading = true;
+                // state.hydrating = true;
+                state.error = null;
+            })
+            .addCase(viewProfilePicture.fulfilled, (state, action) => {
+                // state.hydrating = false;
+                state.loading = false;
+                if (state.user) {
+                    state.user.profilePic = action.payload;
+                } state.success = true;
+                state.error = null;
+            })
+            .addCase(viewProfilePicture.rejected, (state, action) => {
+                // state.hydrating = false;
+                state.loading = false;
+                state.error = null;
+            })
         builder
             .addCase(modifyUserProfile.pending, (state) => {
                 state.loading = true;
@@ -178,7 +206,7 @@ const userSlice = createSlice({
             })
             .addCase(modifyUserProfile.fulfilled, (state, action) => {
                 state.loading = false;
-                state.user = action.payload;
+                state.user = {...state.user,...action.payload};
                 state.success = true;
                 state.error = null;
             })
@@ -188,7 +216,7 @@ const userSlice = createSlice({
                 state.success = false;
             });
 
-            builder
+        builder
             .addCase(removeAccount.pending, (state) => {
                 state.loading = true;
                 state.error = null;

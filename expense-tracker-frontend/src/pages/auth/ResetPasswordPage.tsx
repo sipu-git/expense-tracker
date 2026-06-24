@@ -1,12 +1,14 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Eye, EyeOff, ArrowRight, KeyRound, Check } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/hooks/redux";
 import AuthLayout from "../AuthLayout";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { clearError, clearForgotPasswordState, resetPassword } from "@/store/slices/authSlice/authSlice";
+import { removeAccount, selectActiveAccount } from "@/store/slices/accountSlices/account.slice";
+import { clearUser } from "@/store/slices/userSlices/user.slice";
 
 const resetSchema = z
     .object({
@@ -49,18 +51,27 @@ const rules = [
 export default function ResetPassword() {
     const dispatch = useAppDispatch();
     const navigate = useNavigate();
-    const { loading, error: apiError, resetToken, step } = useAppSelector((s) => s.auth);
+    const location = useLocation();
+
+    const { loading, error: apiError, resetToken: reduxResetToken, step } = useAppSelector((s) => s.auth);
+    const resetToken = location.state?.resetToken ?? reduxResetToken;
 
     const [showNew, setShowNew] = useState(false);
     const [showConfirm, setShowConfirm] = useState(false);
-
-    const {register,handleSubmit,watch,formState: { errors },} = useForm<ResetFormData>({
+    const activeAccount = useAppSelector(selectActiveAccount)
+    const { register, handleSubmit, watch, formState: { errors }, } = useForm<ResetFormData>({
         resolver: zodResolver(resetSchema),
         mode: "onChange",
     });
 
     const watchedPassword = watch("newPassword", "");
     const strength = getStrength(watchedPassword);
+
+    useEffect(() => {
+        if (!resetToken) {
+            navigate("/send-otp", { replace: true });
+        }
+    }, [resetToken, navigate]);
 
     const onSubmit = async (data: ResetFormData) => {
         if (!resetToken) return;
@@ -70,6 +81,10 @@ export default function ResetPassword() {
         );
         if (resetPassword.fulfilled.match(result)) {
             dispatch(clearForgotPasswordState());
+            if (activeAccount?.id) {
+                dispatch(removeAccount(activeAccount.id));
+            }
+            // dispatch(clearUser());
             navigate("/login", { replace: true });
         }
     };
@@ -172,11 +187,10 @@ export default function ResetPassword() {
                                 {[1, 2, 3, 4, 5].map((i) => (
                                     <div
                                         key={i}
-                                        className={`h-1 flex-1 rounded-full transition-all duration-300 ${
-                                            i <= strength.score
+                                        className={`h-1 flex-1 rounded-full transition-all duration-300 ${i <= strength.score
                                                 ? strength.color
                                                 : "bg-slate-200 dark:bg-slate-700"
-                                        }`}
+                                            }`}
                                     />
                                 ))}
                             </div>
@@ -206,20 +220,18 @@ export default function ResetPassword() {
                         return (
                             <div key={rule.label} className="flex items-center gap-2">
                                 <span
-                                    className={`inline-flex items-center justify-center w-4 h-4 rounded-full text-[10px] font-bold transition-colors ${
-                                        passed
+                                    className={`inline-flex items-center justify-center w-4 h-4 rounded-full text-[10px] font-bold transition-colors ${passed
                                             ? "bg-emerald-100 dark:bg-emerald-900/60 text-emerald-600 dark:text-emerald-400"
                                             : "bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-600"
-                                    }`}
+                                        }`}
                                 >
                                     {passed ? "✓" : "·"}
                                 </span>
                                 <span
-                                    className={`text-xs transition-colors ${
-                                        passed
+                                    className={`text-xs transition-colors ${passed
                                             ? "text-emerald-600 dark:text-emerald-400"
                                             : "text-slate-400 dark:text-slate-500"
-                                    }`}
+                                        }`}
                                 >
                                     {rule.label}
                                 </span>

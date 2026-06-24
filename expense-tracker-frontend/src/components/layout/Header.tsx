@@ -20,6 +20,8 @@ import {
   selectIsAuthenticatedFromAccounts,
   switchAccount,
 } from '@/store/slices/accountSlices/account.slice';
+import { persistor, store } from '@/store';
+import { getProfilePicUrl } from '@/utils/profile.util';
 
 type NotifKind = 'alert' | 'info' | 'success';
 
@@ -144,10 +146,20 @@ function ProfileDropdown({
                 className="group flex items-center gap-3 px-4 py-2 cursor-pointer hover:bg-hover transition-colors"
               >
                 <div className="w-7 h-7 rounded-full bg-accent/20 flex items-center justify-center flex-shrink-0">
-                  <span className="text-xs font-semibold text-accent">{initials}</span>
-                </div>
+                  {account.user?.profilePic ? (
+                    <img
+                      src={getProfilePicUrl(account.user?.profilePic) ?? ''}
+                      alt="Profile"
+                      className="w-full h-full object-cover rounded-full"
+                      onError={(e) => {
+                        e.currentTarget.style.display = 'none';
+                      }}
+                    />
+                  ) : (
+                    <span className="text-2xl font-bold text-accent">{initials}</span>
+                  )}                  </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-xs text-muted truncate">{account.user.email}</p>
+                  <p className="text-xs text-muted">{account.user.email}</p>
                 </div>
                 <button
                   onClick={(e) => handleRemoveAccount(e, account.id)}
@@ -223,15 +235,38 @@ export default function Header() {
     );
   };
 
+
   const handleLogout = async () => {
     try {
+      const accountsState = (store.getState().accounts as any);
+      const activeId = accountsState.activeAccountId;
+
       await dispatch(signOutUser()).unwrap();
-      navigate("/login");
+
+      dispatch(removeAccount(activeId));
+
+      const remainingAccounts = (store.getState().accounts as any).accounts as any[];
+
+      if (remainingAccounts.length > 0) {
+        const next = remainingAccounts[0];
+        dispatch(switchAccount(next.id));
+        dispatch(setUser(next.user));
+        await persistor.flush();
+        navigate('/dashboard');
+      } else {
+        dispatch(clearUser());
+        await persistor.flush();
+        await persistor.purge();
+        navigate('/login');
+      }
     } catch (err) {
-      console.error("Logout failed:", err);
+      console.error('Logout failed:', err);
+      dispatch(clearUser());
+      await persistor.flush();
+      await persistor.purge();
+      navigate('/login');
     }
   };
-
   if (!isAuthenticated) {
     return (
       <nav className="sticky top-0 z-20 bg-gray-800 text-white p-4 border-b border-border">
@@ -301,8 +336,18 @@ export default function Header() {
           >
             <div className="w-8 h-8 rounded-full bg-accent/20 flex items-center justify-center flex-shrink-0 overflow-hidden">
               <div className="text-xs w-8 h-8 flex justify-center items-center rounded-full bg-blue-100 font-semibold text-accent">
-                {initials}
-              </div>
+                {user?.profilePic ? (
+                  <img
+                    src={getProfilePicUrl(user?.profilePic) ?? ''}
+                    alt="Profile"
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      e.currentTarget.style.display = 'none';
+                    }}
+                  />
+                ) : (
+                  <span className="text-2xl font-bold text-accent">{initials}</span>
+                )}              </div>
             </div>
             <ChevronDown
               size={14}

@@ -1,25 +1,28 @@
 // src/pages/Settings/Profile.tsx
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import {
-  Camera, Mail, Phone, MapPin, Calendar,
+  Camera, Mail, Phone, Calendar,
   Shield, Bell, CreditCard, TrendingUp,
   Edit3, Check, X, Upload, Award,
-  Activity, DollarSign, Target,
+  Activity, Target,
   AlertTriangle,
 } from 'lucide-react';
 import { useAppDispatch, useAppSelector } from '@/hooks/redux';
 import { formatDate } from '@/hooks/use-format';
-import { clearError, modifyUserProfile, removeAccount } from '@/store/slices/userSlices/user.slice';
+import { clearError, modifyUserProfile, removeAccount, viewProfile, viewProfilePicture } from '@/store/slices/userSlices/user.slice';
 import { selectMonthExpenses, selectMonthTotal } from '@/store/slices/expensesSlice';
 import { formatCurrency } from '@/utils';
 import { selectBudgetStatus } from '@/store/slices/budgetsSlice';
 import { Link, useNavigate } from 'react-router-dom';
+import { getProfilePicUrl } from '@/utils/profile.util';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
 interface EditableField {
   field: 'full_name' | 'phone' | 'email' | 'bio' | null;
 }
+
+// ── StatCard ──────────────────────────────────────────────────────────────────
 
 function StatCard({
   icon: Icon,
@@ -52,7 +55,7 @@ function StatCard({
   return route ? <Link to={route}>{content}</Link> : content;
 }
 
-// ── Inline editable field ─────────────────────────────────────────────────────
+// ── EditableRow ───────────────────────────────────────────────────────────────
 
 function EditableRow({
   icon: Icon,
@@ -70,7 +73,9 @@ function EditableRow({
   value: string;
   placeholder: string;
   isEditing: boolean;
-  onEdit: () => void; onSave: () => void; onCancel: () => void;
+  onEdit: () => void;
+  onSave: () => void;
+  onCancel: () => void;
   onChange: (v: string) => void;
 }) {
   return (
@@ -89,7 +94,9 @@ function EditableRow({
             className="w-full text-sm text-text bg-hover border border-accent/40 rounded-lg px-2.5 py-1.5 outline-none focus:border-accent transition-colors"
           />
         ) : (
-          <p className="text-sm text-text truncate">{value || <span className="text-muted italic">{placeholder}</span>}</p>
+          <p className="text-sm text-text truncate">
+            {value || <span className="text-muted italic">{placeholder}</span>}
+          </p>
         )}
       </div>
       <div className="flex items-center gap-1 flex-shrink-0">
@@ -136,49 +143,54 @@ function Badge({ label, color }: { label: string; color: string }) {
 export default function Profile() {
   const { user, error, loading } = useAppSelector((state) => state.user);
   const monthExpenses = useAppSelector(selectMonthExpenses);
-  const totalAmount = useAppSelector(selectMonthTotal)
+  const totalAmount = useAppSelector(selectMonthTotal);
   const budgetStatus = useAppSelector(selectBudgetStatus);
-  const dispatch = useAppDispatch()
-  // Local editable state (wire to dispatch/API as needed)
+  const dispatch = useAppDispatch();
+  const navigate = useNavigate();
+
   const [form, setForm] = useState({
     full_name: user?.full_name ?? '',
     email: user?.email ?? '',
     phone: user?.phone ?? '',
+    profilePic: user?.profilePic ?? null,
     created_at: user?.created_at ?? '',
     bio: '',
   });
+
+  useEffect(() => {
+    if (user) {
+      setForm({
+        full_name: user.full_name ?? '',
+        email: user.email ?? '',
+        phone: user.phone ?? '',
+        profilePic: user.profilePic ?? null,
+        created_at: user.created_at ?? '',
+        bio: '',
+      });
+    }
+  }, [user]);
 
   const [editing, setEditing] = useState<EditableField['field']>(null);
   const [draft, setDraft] = useState('');
   const [saved, setSaved] = useState(false);
   const [fieldError, setFieldError] = useState<string | null>(null);
-  const navigate = useNavigate()
-  const [displayConfirmBox, setDisplayConfirmBox] = useState(false)
-  const [deleteConfirmText, setDeleteConfirmText] = useState('')
-  const [dropLoading, setDropLoading] = useState(false)
+  const [displayConfirmBox, setDisplayConfirmBox] = useState(false);
+  const [deleteConfirmText, setDeleteConfirmText] = useState('');
+  const [dropLoading, setDropLoading] = useState(false);
 
-  const handleDeleteAccount = async () => {
-    if (deleteConfirmText !== 'Delete my account') return;
-    setDropLoading(true)
-    const result = await dispatch(removeAccount());
-    if (removeAccount.fulfilled.match(result)) {
-      navigate('/login');
-    }
-    setDropLoading(false)
-  }
-
-  //   const [avatarSrc, setAvatarSrc] = useState<string | null>(user?.avatarUrl ?? null);
   const fileRef = useRef<HTMLInputElement>(null);
 
-  const initials = form?.full_name
+  const initials = form.full_name
     ? form.full_name.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2)
     : 'U';
 
+  // ── Handlers ──────────────────────────────────────────────────────────────
+
   function startEdit(field: EditableField['field']) {
-    dispatch(clearError())
-    setFieldError(null)
+    dispatch(clearError());
+    setFieldError(null);
     setEditing(field);
-    setDraft(form[field as keyof typeof form] ?? '');
+    setDraft(form[field as keyof typeof form] as string ?? '');
   }
 
   async function saveEdit() {
@@ -186,6 +198,7 @@ export default function Profile() {
       setFieldError('Field cannot be empty');
       return;
     }
+
     if (editing === 'email') {
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       if (!emailRegex.test(draft)) {
@@ -206,13 +219,37 @@ export default function Profile() {
       setFieldError('Name must be at least 2 characters');
       return;
     }
-    const result = await dispatch(modifyUserProfile({ [editing]: draft.trim() }))
+
+    const formData = new FormData();
+    formData.append(editing, draft.trim());
+
+    const result = await dispatch(modifyUserProfile(formData));
 
     if (modifyUserProfile.fulfilled.match(result)) {
-      setForm((prev) => ({ ...prev, [editing]: draft.trim() }));
       setEditing(null);
       setFieldError(null);
       flashSaved();
+      // form will auto-sync via the useEffect([user]) above
+    }
+  }
+
+  async function handleAvatarChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const localUrl = URL.createObjectURL(file);
+    setForm((prev) => ({ ...prev, profilePic: localUrl }));
+
+    const formData = new FormData();
+    formData.append('profilePic', file);
+
+    const result = await dispatch(modifyUserProfile(formData));
+
+    if (modifyUserProfile.fulfilled.match(result)) {
+      flashSaved()
+    }
+    else {
+      setForm((prev) => ({ ...prev, profilePic: user?.profilePic ?? null }));
     }
   }
 
@@ -228,16 +265,46 @@ export default function Profile() {
     setTimeout(() => setSaved(false), 2000);
   }
 
-  const budgetLimits = budgetStatus.filter((a) => a.isNearLimit)
+  async function handleDeleteAccount() {
+    if (deleteConfirmText !== 'Delete my account') return;
+    setDropLoading(true);
+    const result = await dispatch(removeAccount());
+    if (removeAccount.fulfilled.match(result)) {
+      navigate('/login');
+    }
+    setDropLoading(false);
+  }
+
+  // ── Stats ─────────────────────────────────────────────────────────────────
+
+  const budgetLimits = budgetStatus.filter((a) => a.isNearLimit);
   const stats = [
     {
-      icon: Target, label: 'Budgets active', value: `${budgetStatus.length}`,
+      icon: Target,
+      label: 'Budgets active',
+      value: `${budgetStatus.length}`,
       sub: budgetLimits.length > 0 ? `${budgetLimits.length} near limit` : 'All within limit',
-      color: 'bg-violet-500', route: '/budgets'
+      color: 'bg-violet-500',
+      route: '/budgets',
     },
-    { icon: Activity, label: 'Transactions', value: formatCurrency(totalAmount), sub: `${monthExpenses.length} Transactions`, color: 'bg-emerald-500', route: '/expenses' },
-    { icon: TrendingUp, label: 'Saved vs last', value: '+12%', sub: 'Month on month', color: 'bg-amber-500' },
+    {
+      icon: Activity,
+      label: 'Transactions',
+      value: formatCurrency(totalAmount),
+      sub: `${monthExpenses.length} Transactions`,
+      color: 'bg-emerald-500',
+      route: '/expenses',
+    },
+    {
+      icon: TrendingUp,
+      label: 'Saved vs last',
+      value: '+12%',
+      sub: 'Month on month',
+      color: 'bg-amber-500',
+    },
   ];
+
+  // ── Render ────────────────────────────────────────────────────────────────
 
   return (
     <div className="max-w-4xl mx-auto space-y-6 pb-10">
@@ -245,25 +312,32 @@ export default function Profile() {
       {/* ── Hero card ── */}
       <div className="card overflow-hidden">
         {/* Banner strip */}
-        <div className="h-24 bg-accent/10 relative">
-          <div className="absolute inset-0 opacity-20"
+        <div className="h-10 bg-accent/10 relative">
+          <div
+            className="absolute inset-0 opacity-20"
             style={{
-              backgroundImage: 'repeating-linear-gradient(45deg, transparent, transparent 20px, rgba(99,102,241,0.3) 20px, rgba(99,102,241,0.3) 21px)',
+              backgroundImage:
+                'repeating-linear-gradient(45deg, transparent, transparent 20px, rgba(99,102,241,0.3) 20px, rgba(99,102,241,0.3) 21px)',
             }}
           />
         </div>
 
-        <div className="px-6 pb-6">
+        <div className="px-6 pb-2">
           {/* Avatar row */}
-          <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 -mt-12 mb-4">
+          <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-4">
             <div className="relative w-fit">
               <div className="w-24 h-24 rounded-full bg-accent/20 flex items-center justify-center flex-shrink-0 overflow-hidden">
-                {user ? (
-                  <span className="text-2xl font-bold text-accent">
-                    {initials}
-                  </span>
+                {form.profilePic ? (
+                  <img
+                    src={getProfilePicUrl(form.profilePic) ?? ''}
+                    alt="Profile"
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      e.currentTarget.style.display = 'none';
+                    }}
+                  />
                 ) : (
-                  <span className="text-xs font-semibold text-accent">N/A</span>
+                  <span className="text-2xl font-bold text-accent">{initials}</span>
                 )}
               </div>
               <button
@@ -271,23 +345,23 @@ export default function Profile() {
                 aria-label="Change avatar"
                 className="absolute -bottom-1 -right-1 w-7 h-7 rounded-lg bg-accent text-white flex items-center justify-center shadow-md hover:bg-accent-hover transition-colors"
               >
-                <Camera size={13} />
+                {loading ? (
+                  <span className="w-3 h-3 rounded-full border-2 border-white/30 border-t-white animate-spin" />
+                ) : (
+                  <Camera size={13} />
+                )}
               </button>
-              {/* <input
+              <input
                 ref={fileRef}
                 type="file"
-                accept="image/*"
+                accept="image/png,image/jpeg,image/jpg,image/webp"
                 className="hidden"
                 onChange={handleAvatarChange}
-              /> */}
+              />
             </div>
 
             <div className="flex items-center gap-2">
-              {/* <Badge label="Pro member" color="bg-accent/10 text-accent" />
-              <Badge label="Verified" color="bg-emerald-500/10 text-emerald-600" /> */}
-              {saved && (
-                <Badge label="✓ Saved" color="bg-emerald-500/10 text-emerald-600" />
-              )}
+              {saved && <Badge label="✓ Saved" color="bg-emerald-500/10 text-emerald-600" />}
             </div>
           </div>
 
@@ -310,35 +384,40 @@ export default function Profile() {
                   className="flex-1 text-sm text-text bg-hover border border-accent/40 rounded-xl px-3 py-2 outline-none focus:border-accent resize-none transition-colors"
                 />
                 <div className="flex flex-col gap-1 mt-0.5">
-                  <button onClick={saveEdit} className="p-1.5 rounded-lg bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20 transition-colors"><Check size={13} /></button>
-                  <button onClick={cancelEdit} className="p-1.5 rounded-lg hover:bg-hover text-muted transition-colors"><X size={13} /></button>
+                  <button
+                    onClick={saveEdit}
+                    className="p-1.5 rounded-lg bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20 transition-colors"
+                  >
+                    <Check size={13} />
+                  </button>
+                  <button
+                    onClick={cancelEdit}
+                    className="p-1.5 rounded-lg hover:bg-hover text-muted transition-colors"
+                  >
+                    <X size={13} />
+                  </button>
                 </div>
               </div>
             ) : (
-              <>
-                {/* <p className="flex-1 text-sm text-muted leading-relaxed">
-                  {form.bio || <span className="italic">Add a short bio to personalize your profile…</span>}
-                </p> */}
-                <button
-                  onClick={() => startEdit('bio')}
-                  className="p-1.5 rounded-lg opacity-0 group-hover:opacity-100 hover:bg-hover text-muted transition-all flex-shrink-0"
-                >
-                  <Edit3 size={13} />
-                </button>
-              </>
+              <button
+                onClick={() => startEdit('bio')}
+                className="p-1.5 rounded-lg opacity-0 group-hover:opacity-100 hover:bg-hover text-muted transition-all flex-shrink-0"
+              >
+                <Edit3 size={13} />
+              </button>
             )}
           </div>
         </div>
       </div>
 
       {/* ── Stats row ── */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
         {stats.map((s) => (
           <StatCard key={s.label} {...s} />
         ))}
       </div>
 
-      {/* ── Details + Security side by side ── */}
+      {/* ── Details + Security ── */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
         {/* Personal details */}
@@ -352,47 +431,53 @@ export default function Profile() {
               <span className="w-4 h-4 rounded-full border-2 border-accent/30 border-t-accent animate-spin" />
             )}
           </div>
+
           {(error || fieldError) && (
-            <div role="alert" className="flex items-start gap-2 rounded-xl bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900/60 px-3 py-2.5 mb-3">
-              <span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-red-100 text-red-600 text-[10px] font-bold shrink-0 mt-0.5">!</span>
+            <div
+              role="alert"
+              className="flex items-start gap-2 rounded-xl bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900/60 px-3 py-2.5 mb-3"
+            >
+              <span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-red-100 text-red-600 text-[10px] font-bold shrink-0 mt-0.5">
+                !
+              </span>
               <p className="text-xs text-red-700 dark:text-red-300">{fieldError ?? error}</p>
             </div>
           )}
-          <div className="">
+
+          <div>
             <EditableRow
-              icon={Edit3} label="Full name"
+              icon={Edit3}
+              label="Full name"
               value={editing === 'full_name' ? draft : form.full_name}
               placeholder="Your full name"
               isEditing={editing === 'full_name'}
               onEdit={() => startEdit('full_name')}
-              onSave={saveEdit} onCancel={cancelEdit}
+              onSave={saveEdit}
+              onCancel={cancelEdit}
               onChange={setDraft}
             />
             <EditableRow
-              icon={Mail} label="Email address"
+              icon={Mail}
+              label="Email address"
               value={editing === 'email' ? draft : form.email}
               placeholder="you@example.com"
               isEditing={editing === 'email'}
               onEdit={() => startEdit('email')}
-              onSave={saveEdit} onCancel={cancelEdit}
+              onSave={saveEdit}
+              onCancel={cancelEdit}
               onChange={setDraft}
             />
             <EditableRow
-              icon={Phone} label="Phone number"
+              icon={Phone}
+              label="Phone number"
               value={editing === 'phone' ? draft : form.phone}
               placeholder="+1 (555) 000-0000"
               isEditing={editing === 'phone'}
               onEdit={() => startEdit('phone')}
-              onSave={saveEdit} onCancel={cancelEdit}
+              onSave={saveEdit}
+              onCancel={cancelEdit}
               onChange={setDraft}
-            />            {/* <EditableRow
-              icon={MapPin}   label="Location"
-              value={form.location} placeholder="City, Country"
-              isEditing={editing === 'location'}
-              onEdit={() => startEdit('location')}
-              onSave={saveEdit} onCancel={cancelEdit}
-              onChange={setDraft}
-            /> */}
+            />
             <div className="flex items-center gap-3 py-3">
               <div className="w-8 h-8 rounded-lg bg-hover flex items-center justify-center flex-shrink-0">
                 <Calendar size={15} className="text-muted" />
@@ -411,7 +496,6 @@ export default function Profile() {
           <p className="text-xs text-muted mb-4">Keep your account safe</p>
 
           <div className="space-y-3">
-            {/* Password */}
             <div className="flex items-center justify-between p-3 rounded-xl bg-hover">
               <div className="flex items-center gap-3">
                 <div className="w-8 h-8 rounded-lg bg-card flex items-center justify-center">
@@ -422,12 +506,14 @@ export default function Profile() {
                   <p className="text-xs text-muted">Last changed 3 months ago</p>
                 </div>
               </div>
-              <button onClick={() => navigate("/send-otp")} className="text-xs font-semibold text-accent hover:underline">
+              <button
+                onClick={() => navigate('/send-otp')}
+                className="text-xs font-semibold text-accent hover:underline"
+              >
                 Change
               </button>
             </div>
 
-            {/* 2FA */}
             <div className="flex items-center justify-between p-3 rounded-xl bg-hover">
               <div className="flex items-center gap-3">
                 <div className="w-8 h-8 rounded-lg bg-card flex items-center justify-center">
@@ -443,7 +529,6 @@ export default function Profile() {
               </button>
             </div>
 
-            {/* Notifications */}
             <div className="flex items-center justify-between p-3 rounded-xl bg-hover">
               <div className="flex items-center gap-3">
                 <div className="w-8 h-8 rounded-lg bg-card flex items-center justify-center">
@@ -459,7 +544,6 @@ export default function Profile() {
               </button>
             </div>
 
-            {/* Billing */}
             <div className="flex items-center justify-between p-3 rounded-xl bg-hover">
               <div className="flex items-center gap-3">
                 <div className="w-8 h-8 rounded-lg bg-card flex items-center justify-center">
@@ -489,12 +573,15 @@ export default function Profile() {
           </button>
           <button
             onClick={() => setDisplayConfirmBox(true)}
-            className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium border border-red-500/30 text-red-500 hover:bg-red-500/10 transition-colors">
+            className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium border border-red-500/30 text-red-500 hover:bg-red-500/10 transition-colors"
+          >
             <X size={14} />
             Delete account
           </button>
         </div>
       </div>
+
+      {/* ── Delete confirmation modal ── */}
       {displayConfirmBox && (
         <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
           <div className="bg-card w-full max-w-md rounded-2xl border border-border overflow-hidden shadow-xl">
@@ -505,20 +592,36 @@ export default function Profile() {
               </div>
               <div>
                 <p className="font-semibold text-red-900 dark:text-red-100">Delete your account</p>
-                <p className="text-xs text-red-600 dark:text-red-400 mt-0.5">This action is permanent and cannot be undone</p>
+                <p className="text-xs text-red-600 dark:text-red-400 mt-0.5">
+                  This action is permanent and cannot be undone
+                </p>
               </div>
             </div>
 
             {/* Body */}
             <div className="px-6 py-5">
-              <p className="text-xs text-muted mb-4 leading-relaxed">Before you proceed, please read and acknowledge the following:</p>
+              <p className="text-xs text-muted mb-4 leading-relaxed">
+                Before you proceed, please read and acknowledge the following:
+              </p>
 
               <ul className="space-y-2 mb-5">
                 {[
-                  { label: 'All data will be erased.', detail: 'Transactions, budgets, categories, and settings are permanently deleted.' },
-                  { label: 'No recovery possible.', detail: 'Your account cannot be restored once deleted.' },
-                  { label: 'Active subscriptions cancelled.', detail: 'Pro plan billing is cancelled immediately. Refunds follow our refund policy.' },
-                  { label: 'Shared data removed.', detail: 'Any reports shared with other users will become inaccessible.' },
+                  {
+                    label: 'All data will be erased.',
+                    detail: 'Transactions, budgets, categories, and settings are permanently deleted.',
+                  },
+                  {
+                    label: 'No recovery possible.',
+                    detail: 'Your account cannot be restored once deleted.',
+                  },
+                  {
+                    label: 'Active subscriptions cancelled.',
+                    detail: 'Pro plan billing is cancelled immediately. Refunds follow our refund policy.',
+                  },
+                  {
+                    label: 'Shared data removed.',
+                    detail: 'Any reports shared with other users will become inaccessible.',
+                  },
                 ].map(({ label, detail }) => (
                   <li key={label} className="flex items-start gap-2.5 text-xs bg-hover rounded-xl p-3">
                     <X size={13} className="text-red-500 flex-shrink-0 mt-0.5" />
@@ -532,13 +635,17 @@ export default function Profile() {
               {/* Confirm input */}
               <div className="mb-5">
                 <label className="block text-xs text-muted mb-1.5">
-                  Type <code className="bg-hover text-red-500 px-1.5 py-0.5 rounded text-[11px]">DELETE</code> to confirm
+                  Type{' '}
+                  <code className="bg-hover text-red-500 px-1.5 py-0.5 rounded text-[11px]">
+                    Delete my account
+                  </code>{' '}
+                  to confirm
                 </label>
                 <input
                   type="text"
                   value={deleteConfirmText}
                   onChange={(e) => setDeleteConfirmText(e.target.value)}
-                  placeholder="Type DELETE here"
+                  placeholder="Type Delete my account here"
                   className="w-full text-sm bg-hover border border-red-500/30 focus:border-red-500 rounded-xl px-3 py-2 outline-none transition-colors text-text"
                 />
               </div>
@@ -546,7 +653,10 @@ export default function Profile() {
               {/* Actions */}
               <div className="flex gap-3">
                 <button
-                  onClick={() => { setDisplayConfirmBox(false); setDeleteConfirmText(''); }}
+                  onClick={() => {
+                    setDisplayConfirmBox(false);
+                    setDeleteConfirmText('');
+                  }}
                   className="flex-1 px-4 py-2.5 rounded-xl text-sm font-medium border border-border text-text hover:bg-hover transition-colors"
                 >
                   Cancel
@@ -556,10 +666,13 @@ export default function Profile() {
                   disabled={deleteConfirmText !== 'Delete my account' || dropLoading}
                   className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium bg-red-500 text-white hover:bg-red-600 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
                 >
-                  {dropLoading
-                    ? <span className="w-4 h-4 rounded-full border-2 border-white/30 border-t-white animate-spin" />
-                    : <><X size={14} /> Delete my account</>
-                  }
+                  {dropLoading ? (
+                    <span className="w-4 h-4 rounded-full border-2 border-white/30 border-t-white animate-spin" />
+                  ) : (
+                    <>
+                      <X size={14} /> Delete my account
+                    </>
+                  )}
                 </button>
               </div>
 

@@ -69,7 +69,7 @@ export default function ExpensesList() {
     <div className="space-y-4">
       {/* Search + filter bar */}
       <div className="card">
-        <div className="flex gap-2">
+        <div className="flex lg:flex-row flex-col gap-2">
           <div className="relative flex-1">
             <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted" />
             <input
@@ -79,41 +79,43 @@ export default function ExpensesList() {
               onChange={(e) => handleSearch(e.target.value)}
             />
           </div>
-          <select
-            value={selectMonth}
-            onChange={(e) => handleMonthChange(e.target.value)}
-            className="px-3 py-2 rounded-xl text-sm font-medium border border-border text-text bg-card hover:border-accent/50 transition-all outline-none cursor-pointer"
-          >
-            {monthOptions.map((opt) => (
-              <option key={opt.value} value={opt.value}>
-                {opt.label}
-              </option>
-            ))}
-          </select>
-          <button
-            onClick={() => setShowFilters(!showFilters)}
-            className={cn(
-              'flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium border transition-all',
-              showFilters
-                ? 'bg-accent/10 border-accent text-accent'
-                : 'border-border text-muted hover:text-text hover:border-accent/50'
-            )}
-          >
-            <SlidersHorizontal size={15} />
-            <span className="hidden sm:inline">Filters</span>
-            {selectedCats.length > 0 && (
-              <span className="w-5 h-5 rounded-full bg-accent text-white text-xs flex items-center justify-center">
-                {selectedCats.length}
-              </span>
-            )}
-          </button>
-          <button
-            onClick={() => navigate("/add-expense")}
-            className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold bg-accent text-white hover:bg-accent-hover transition-all shadow-md shadow-accent/25"
-          >
-            <Plus size={15} />
-            <span className="hidden sm:inline">Add</span>
-          </button>
+          <div className="flex lg:justify-normal justify-start gap-2">
+            <select
+              value={selectMonth}
+              onChange={(e) => handleMonthChange(e.target.value)}
+              className="px-3 py-2 rounded-xl text-sm font-medium border border-border text-text bg-card hover:border-accent/50 transition-all outline-none cursor-pointer"
+            >
+              {monthOptions.map((opt) => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.label}
+                </option>
+              ))}
+            </select>
+            <button
+              onClick={() => setShowFilters(!showFilters)}
+              className={cn(
+                'flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium border transition-all',
+                showFilters
+                  ? 'bg-accent/10 border-accent text-accent'
+                  : 'border-border text-muted hover:text-text hover:border-accent/50'
+              )}
+            >
+              <SlidersHorizontal size={15} />
+              <span className="hidden sm:inline">Filters</span>
+              {selectedCats.length > 0 && (
+                <span className="w-5 h-5 rounded-full bg-accent text-white text-xs flex items-center justify-center">
+                  {selectedCats.length}
+                </span>
+              )}
+            </button>
+            <button
+              onClick={() => navigate("/add-expense")}
+              className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold bg-accent text-white hover:bg-accent-hover transition-all shadow-md shadow-accent/25"
+            >
+              <Plus size={15} />
+              <span className="hidden sm:inline">Add</span>
+            </button>
+          </div>
         </div>
 
         {/* Category filters */}
