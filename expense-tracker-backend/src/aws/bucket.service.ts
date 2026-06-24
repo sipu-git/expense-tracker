@@ -1,8 +1,8 @@
 import { DeleteObjectCommand, PutObjectCommand } from "@aws-sdk/client-s3";
 import crypto from "crypto";
-import { s3 } from "./s3.config";
-import { generateImageUrl } from "./bucket.util";
-import { prisma } from "../../lib/prisma";
+import { s3 } from "./s3.config.js";
+import { generateImageUrl } from "./bucket.util.js";
+import { prisma } from "../../lib/prisma.js";
 
 const ALLOWED_TYPES = ["image/png", "image/jpeg", "image/jpg", "image/webp"];
 

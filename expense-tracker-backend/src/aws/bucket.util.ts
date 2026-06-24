@@ -1,6 +1,6 @@
 import { GetObjectCommand } from "@aws-sdk/client-s3"
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner"
-import { s3 } from "./s3.config"
+import { s3 } from "./s3.config.js"
 
 export const generateImageUrl = async (fileKey:string)=>{
     const command = new GetObjectCommand({
