@@ -1,7 +1,7 @@
 import { prisma } from "../../../lib/prisma.js";
 import { generateOTP } from "./auth.util.js";
 import { sendOtpEmail } from "../../shared/configs/nodemailer.config.js";
-import { checkRateLimit, resetRateLimit, storeOtp, verfiyOtp } from "./redis/redis.util.js";
+import { checkRateLimit, resetRateLimit, storeOtp, verfiyOtp } from "../../shared/redis/services/auth-redis.service.js";
 import jwt from 'jsonwebtoken';
 import { AppError } from "../../../lib/AppError.js";
 

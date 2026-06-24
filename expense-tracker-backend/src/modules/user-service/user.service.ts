@@ -4,6 +4,8 @@ import { removeProfileImage, uploadProfileImage } from "../../aws/bucket.service
 import { CreateUserInput, ModifyUserInput } from "./user.validation.js";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
+import { cacheQuery } from "../../shared/redis/cacheQuery.js";
+import redisService from '../../shared/redis/services/db-caching.service.js';
 
 export async function createUser(data: CreateUserInput) {
     const { full_name, email, phone, password } = data;
@@ -23,6 +25,7 @@ export async function createUser(data: CreateUserInput) {
                 password: hashedPassword,
             },
         });
+        await redisService.delete(`profile:${user.id}`);
         return user;
     });
 }
@@ -45,15 +48,19 @@ export async function loginUser(email: string, password: string) {
 }
 
 export async function getUserById(id: string) {
-    return await prisma.$transaction(async (prisma: any) => {
-        const user = await prisma.user.findUnique({
-            where: { id },
+    const cacheKey = `profile:${id}`;
+
+    return cacheQuery(cacheKey, 300, async () => {
+        return await prisma.$transaction(async (prisma: any) => {
+            const user = await prisma.user.findUnique({
+                where: { id },
+            });
+            if (!user) {
+                throw new AppError("User not found", 404);
+            }
+            return user;
         });
-        if (!user) {
-            throw new AppError("User not found", 404);
-        }
-        return user;
-    });
+    })
 }
 
 export async function signedOutuser(userId: string) {
@@ -152,8 +159,7 @@ export async function modifyProfile(userId: string,
                 created_at: true,
             }
         });
-        // const profilePicUrl = updatedUser.profilePic ? await getProfileImageUrl(userId) : null;
-        // return { ...updatedUser, profilePic:profilePicUrl };
+        await redisService.delete(`profile:${user.id}`);
         return updatedUser;
     })
 }
@@ -171,10 +177,12 @@ export async function dropProfile(userId: string) {
         if (user.profilePic) {
             await removeProfileImage(userId)
         }
-        return await tx.user.delete({
+        const dropUser = await tx.user.delete({
             where: {
                 id: userId
             }
         })
+        await redisService.delete(`profile:${user.id}`);
+        return dropUser;
     })
 }

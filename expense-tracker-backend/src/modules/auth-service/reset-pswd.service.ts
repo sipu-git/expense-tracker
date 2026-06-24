@@ -1,7 +1,7 @@
 import { prisma } from "../../../lib/prisma.js";
 // import { verifyForgotPasswordOtp } from "./forgot-pswd.service";
 import bcrypt from 'bcrypt';
-import { clearAllOTPs, resetRateLimit } from "./redis/redis.util.js";
+import { clearAllOTPs, resetRateLimit } from "../../shared/redis/services/auth-redis.service.js";
 import { AppError } from "../../../lib/AppError.js";
 
 export async function resetPasswordWithToken(

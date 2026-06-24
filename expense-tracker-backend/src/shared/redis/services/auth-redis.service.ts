@@ -1,5 +1,5 @@
 import { AppError } from "../../../../lib/AppError.js";
-import redis from "../../../shared/configs/redis.js";
+import redis from "../redis.config.js";
 
 const otp_expiry = 600;
 const otp_rate_limit = 300;
