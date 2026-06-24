@@ -65,7 +65,7 @@ export const updateProfile = async (req: Request, res: Response) => {
         return res.status(200).json(successResponse("User profile updated successfully", results));
 }
 
-export const getProfilePicture = async (req: Request, res: Response) => {
+export const viewProfilePicture = async (req: Request, res: Response) => {
   const userId = req.user?.id;
 
   if (!userId) {
