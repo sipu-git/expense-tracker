@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { createExpenseSchema, expenseFilterSchema } from "./expenses.validation.js";
+import { createExpenseSchema, expenseFilterSchema, UpdateExpenseInputs } from "./expenses.validation.js";
 import { createExpenses, deleteExpense, getExpensesByFilter, removeAllExpenses, updateExpenses, viewAllExpenses, ViewExpenseById } from "./expense.service.js";
 import { errorResponse, successResponse } from "../../shared/util/ApiResponses.js";
 
@@ -57,20 +57,13 @@ export const modifyExpenses = async (req: Request, res: Response) => {
     try {
         const expenseId = req.params.expenseId as any;
         const userId = req.user?.id;
+        const data = req.body as UpdateExpenseInputs;
 
         if (!userId) {
             res.status(401).json({ success: false, message: "Unauthorized" });
             return;
         }
-
-        const infos = createExpenseSchema.safeParse(req.body);
-        if (!infos.success) {
-            res.status(400).json({ success: false, message: "Invalid data", errors: infos.error.flatten() });
-            return;
-        }
-
-        const { name, amount, quantity, bought_at, type, groupId } = infos.data;
-        const response = await updateExpenses(expenseId, { name, amount, quantity, bought_at, type, groupId }, userId);
+        const response = await updateExpenses(expenseId, data, userId);
 
         res.status(200).json({ success: true, data: response });
     } catch (error: any) {

@@ -3,7 +3,7 @@ import { prisma } from "../../../lib/prisma.js";
 import { GroupRole } from "../../shared/configs/rbac.role.js";
 import { cacheQuery } from "../../shared/redis/cacheQuery.js";
 import { ExpenseFilter, getExpenseDateRange } from "../../shared/util/expenses.util.js";
-import { CreateExpenseInputs } from "./expenses.validation.js";
+import { CreateExpenseInputs, UpdateExpenseInputs } from "./expenses.validation.js";
 import redisService from '../../shared/redis/services/db-caching.service.js';
 
 export async function createExpenses(data: CreateExpenseInputs, userId: string) {
@@ -123,10 +123,9 @@ export async function ViewExpenseById(expenseId: string, userId: string) {
             return expense
         })
     })
-
 }
 
-export async function updateExpenses(expenseId: string, data: CreateExpenseInputs, userId: string) {
+export async function updateExpenses(expenseId: string, data: UpdateExpenseInputs, userId: string) {
     return await prisma.$transaction(async (tx: any) => {
         const expense = await tx.expenses.findUnique({
             where: {
@@ -160,7 +159,10 @@ export async function updateExpenses(expenseId: string, data: CreateExpenseInput
             where: {
                 id: expenseId
             },
-            data
+            data: {
+                ...data,
+                ...(data.amount !== undefined && { amount: Number(data.amount) }),
+            }
         })
         await Promise.all([
             redisService.delete(`expense:${expenseId}`),

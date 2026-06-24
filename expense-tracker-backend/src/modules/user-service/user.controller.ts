@@ -38,6 +38,7 @@ export const logOutUser = async (req: Request, res: Response) => {
         });
         return res.status(200).json(successResponse("User signed out successfully", result));
 }
+
 export const getUserProfile = async (req: Request, res: Response) => {
         const userId = req.user?.id;
         if (!userId) {

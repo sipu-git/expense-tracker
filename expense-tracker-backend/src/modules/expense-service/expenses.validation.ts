@@ -22,3 +22,5 @@ export const expenseFilterSchema = z.enum(["day", "month", "year"]);
 
 export type ExpenseFilter = z.infer<typeof expenseFilterSchema>;
 export type CreateExpenseInputs = z.infer<typeof createExpenseSchema>;
+export const updateExpenseSchema = createExpenseSchema.partial();
+export type UpdateExpenseInputs = z.infer<typeof updateExpenseSchema>;
