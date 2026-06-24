@@ -9,6 +9,7 @@ import { format } from 'date-fns';
 import { cn } from '../utils';
 import { useNavigate } from 'react-router-dom';
 import { removeAll } from '@/store/slices/expensesSlice';
+import { getProfilePicUrl } from '@/utils/profile.util';
 
 export default function Settings() {
   const dispatch = useAppDispatch();
@@ -41,12 +42,17 @@ export default function Settings() {
       <div className="card">
         <div className="flex items-center gap-4 mb-4">
           <div className="w-12 h-12 rounded-full bg-green-100 dark:bg-green-100/5 dark:bg- flex items-center justify-center flex-shrink-0 overflow-hidden">
-            {user ? (
-              <span className="text-xl font-semibold text-green-500">
-                {initials}
-              </span>
+            {user?.profilePic ? (
+              <img
+                src={getProfilePicUrl(user?.profilePic) ?? ''}
+                alt="Profile"
+                className="w-full h-full object-cover"
+                onError={(e) => {
+                  e.currentTarget.style.display = 'none';
+                }}
+              />
             ) : (
-              <span className="text-xs font-semibold text-accent">N/A</span>
+              <span className="text-2xl font-bold text-accent">{initials}</span>
             )}
           </div>
           <div>
@@ -151,7 +157,7 @@ export default function Settings() {
       </div>
 
       {/* About */}
-      <div className="card">
+      {/* <div className="card">
         <h3 className="font-bold text-text mb-3">About ExpenseWallet</h3>
         <div className="space-y-2 text-sm text-muted">
           <div className="flex justify-between"><span>Version</span><span className="text-text font-medium">1.0.0</span></div>
@@ -159,7 +165,7 @@ export default function Settings() {
           <div className="flex justify-between"><span>Charts</span><span className="text-text font-medium">Recharts</span></div>
           <div className="flex justify-between"><span>Storage</span><span className="text-text font-medium">LocalStorage</span></div>
         </div>
-      </div>
+      </div> */}
     </div>
   );
 }

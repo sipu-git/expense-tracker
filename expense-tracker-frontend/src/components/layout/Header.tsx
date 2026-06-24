@@ -213,10 +213,9 @@ export default function Header() {
   const expenses = useAppSelector(selectFilteredExpenses);
   const { user, loading: isLoggingOut } = useAppSelector((state) => state.user);
   const location = useLocation();
-  // ✅ Use accountsSlice selector, not userSlice
   const isAuthenticated = useAppSelector(selectIsAuthenticatedFromAccounts);
 
-  const pageTitle = VIEW_TITLES[location.pathname] ?? 'SpendWise';
+  const pageTitle = VIEW_TITLES[location.pathname] ?? 'ExpenseWallet';
 
   const notif = useDropdown();
   const profile = useDropdown();

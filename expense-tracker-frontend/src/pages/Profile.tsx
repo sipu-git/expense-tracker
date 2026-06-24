@@ -372,7 +372,7 @@ export default function Profile() {
           </div>
 
           {/* Bio */}
-          <div className="group flex items-start gap-2 mt-3">
+          {/* <div className="group flex items-start gap-2 mt-3">
             {editing === 'bio' ? (
               <div className="flex-1 flex items-start gap-2">
                 <textarea
@@ -406,7 +406,7 @@ export default function Profile() {
                 <Edit3 size={13} />
               </button>
             )}
-          </div>
+          </div> */}
         </div>
       </div>
 
