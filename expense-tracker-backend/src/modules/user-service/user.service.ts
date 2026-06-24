@@ -1,5 +1,6 @@
 import { AppError } from "../../../lib/AppError.js";
 import { prisma } from "../../../lib/prisma.js";
+import { getProfileImageUrl, removeProfileImage, uploadProfileImage } from "../../aws/bucket.service.js";
 import { CreateUserInput, ModifyUserInput } from "./user.validation.js";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
@@ -68,7 +69,8 @@ export async function signedOutuser(userId: string) {
 }
 
 
-export async function modifyProfile(userId: string, payload: ModifyUserInput) {
+export async function modifyProfile(userId: string,
+    payload: ModifyUserInput, file?: Express.Multer.File) {
     return await prisma.$transaction(async (prisma: any) => {
         const user = await prisma.user.findUnique({
             where: { id: userId },
@@ -81,7 +83,12 @@ export async function modifyProfile(userId: string, payload: ModifyUserInput) {
             email: string;
             phone: string;
             password: string;
+            profilePic: string;
         }> = {};
+        if (file) {
+            const { profilePic: newKey } = await uploadProfileImage(file, userId)
+            updatedata.profilePic = newKey ?? undefined;
+        }
         if (payload.full_name) {
             if (payload.full_name) {
                 if (payload.full_name.trim().length < 2) {
@@ -130,6 +137,9 @@ export async function modifyProfile(userId: string, payload: ModifyUserInput) {
             }
             updatedata.password = await bcrypt.hash(payload.newPassword, 10);
         }
+        if (Object.keys(updatedata).length === 0) {
+            throw new AppError("No valid fields provided to update", 400);
+        }
         const updatedUser = await prisma.user.update({
             where: { id: user.id },
             data: updatedata,
@@ -138,11 +148,12 @@ export async function modifyProfile(userId: string, payload: ModifyUserInput) {
                 full_name: true,
                 email: true,
                 phone: true,
+                profilePic: true,
                 created_at: true,
-                // modified_at: true,
             }
         });
-        return updatedUser;
+        const profilePicUrl = updatedUser.profilePic ? await getProfileImageUrl(userId) : null;
+        return { ...updatedUser, profilePic:profilePicUrl };
     })
 }
 
@@ -155,6 +166,9 @@ export async function dropProfile(userId: string) {
         })
         if (!user) {
             throw new AppError("User doesn't exist", 404)
+        }
+        if (user.profilePic) {
+            await removeProfileImage(userId)
         }
         return await tx.user.delete({
             where: {

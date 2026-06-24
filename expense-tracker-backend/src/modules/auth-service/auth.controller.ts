@@ -44,9 +44,9 @@ export async function resetPasswordWithOtpController(req: Request, res: Response
         });
         return;
     }
-    const { userId, email } = req.resetUser!;
+    const { email } = req.resetUser!;
 
-    const result = await resetPasswordWithToken(userId, email, newPassword);
+    const result = await resetPasswordWithToken(email, newPassword);
 
     res.status(200).json(successResponse("password reset successfully!", result));
 }

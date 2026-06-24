@@ -4,6 +4,7 @@ model User {
   email      String         @unique
   phone      String
   password   String
+  profilePic String?
   created_at DateTime       @default(now())
   updated_at DateTime       @updatedAt
   role       GroupRole?      @default(MEMBER)

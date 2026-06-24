@@ -5,13 +5,13 @@ import { clearAllOTPs, resetRateLimit } from "./redis/redis.util.js";
 import { AppError } from "../../../lib/AppError.js";
 
 export async function resetPasswordWithToken(
-  userId: string,
+  // userId: string,
   email: string,
   newPassword: string
 ): Promise<{ success: boolean; message: string }> {
   try {
 
-    const user = await prisma.user.findUnique({ where: { id: userId } });
+    const user = await prisma.user.findUnique({ where: { email } });
     if (!user) throw new AppError('User not found',404);
 
     const isSamePassword = await bcrypt.compare(newPassword, user.password);

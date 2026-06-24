@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import { createUser, dropProfile, getUserById, loginUser, modifyProfile, signedOutuser } from "./user.service.js";
 import { errorResponse, successResponse } from "../../shared/util/ApiResponses.js";
 import { modifyUserSchema } from "./user.validation.js";
+import { getProfileImageUrl } from "../../aws/bucket.service.js";
 
 export const registerUser = async (req: Request, res: Response) => {
         const { full_name, email, phone, password } = req.body;
@@ -48,7 +49,9 @@ export const getUserProfile = async (req: Request, res: Response) => {
 
 export const updateProfile = async (req: Request, res: Response) => {
         const userId = req.user?.id;
-        const parsedInfos = await modifyUserSchema.safeParse(req.body)
+        const file = req.file;
+        const payload = req.body;
+        const parsedInfos = await modifyUserSchema.safeParse(payload)
         if (!userId) {
                 return res.status(401).json(errorResponse("Unauthorized"));
         }
@@ -57,10 +60,26 @@ export const updateProfile = async (req: Request, res: Response) => {
                         success: false, message: "Validation failed", errors: parsedInfos.error.format()
                 });
         }
-        const responseData = parsedInfos.data;
-        const results = await modifyProfile(userId, responseData)
+        // const responseData = parsedInfos.data;
+        const results = await modifyProfile(userId, parsedInfos.data,file)
         return res.status(200).json(successResponse("User profile updated successfully", results));
 }
+
+export const getProfilePicture = async (req: Request, res: Response) => {
+  const userId = req.user?.id;
+
+  if (!userId) {
+    return res.status(401).json(errorResponse("Unauthorized"));
+  }
+
+  const url = await getProfileImageUrl(userId);
+
+  if (!url) {
+    return res.status(404).json(errorResponse("No profile picture found"));
+  }
+
+  return res.status(200).json(successResponse("Profile picture URL", { url }));
+};
 
 export const removeProfile = async (req: Request, res: Response) => {
         const userId = req.user?.id;
