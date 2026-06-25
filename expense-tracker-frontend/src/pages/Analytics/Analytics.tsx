@@ -117,7 +117,7 @@ export default function Analytics() {
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-border">
+              <tr className="border-b border-border dark:border-slate-700">
                 <th className="text-left text-xs font-semibold text-muted uppercase tracking-wider py-2 pr-4">Category</th>
                 <th className="text-right text-xs font-semibold text-muted uppercase tracking-wider py-2 px-4">Transactions</th>
                 <th className="text-right text-xs font-semibold text-muted uppercase tracking-wider py-2 px-4">Total</th>
