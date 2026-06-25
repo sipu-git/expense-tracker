@@ -5,6 +5,7 @@ import { cacheQuery } from "../../shared/redis/cacheQuery.js";
 import { ExpenseFilter, getExpenseDateRange } from "../../shared/util/expenses.util.js";
 import { CreateExpenseInputs, UpdateExpenseInputs } from "./expenses.validation.js";
 import redisService from '../../shared/redis/services/db-caching.service.js';
+import { categorizeExpense } from "../automation-services/categorize-expenses.service.js";
 
 export async function createExpenses(data: CreateExpenseInputs, userId: string) {
     const exactData = new Date(data.bought_at)
@@ -12,6 +13,9 @@ export async function createExpenses(data: CreateExpenseInputs, userId: string) 
 
     if (exactData > today) {
         throw new AppError("Expense cann't added for future time!", 400)
+    }
+    if (!data.type) {
+        data.type = await categorizeExpense(data.name, Number(data.amount))
     }
     return await prisma.$transaction(async (tx: any) => {
         if (data.groupId) {
@@ -37,8 +41,8 @@ export async function createExpenses(data: CreateExpenseInputs, userId: string) 
             }
         })
         await Promise.all([
-            redisService.delete("expenses:all"),
-            redisService.deleteByPattern("expenses:filters:*"),
+            redisService.delete(`expenses:${userId}:all`),
+            redisService.deleteByPattern(`expenses:${userId}:filters:*`)
         ])
         return expenses;
     }, {
@@ -49,7 +53,7 @@ export async function createExpenses(data: CreateExpenseInputs, userId: string) 
 
 
 export async function viewAllExpenses(userId: string) {
-    const cacheKey = "expenses:all";
+    const cacheKey = `expenses:${userId}:all`;
     return cacheQuery(cacheKey, 300, async () => {
         return await prisma.expenses.findMany({
             where: {
@@ -86,7 +90,7 @@ export async function viewAllExpenses(userId: string) {
 }
 
 export async function ViewExpenseById(expenseId: string, userId: string) {
-    const cacheKey = `expense:${expenseId}`;
+    const cacheKey = `expense:${userId}:${expenseId}`;
     return cacheQuery(cacheKey, 300, async () => {
         return await prisma.$transaction(async (tx: any) => {
             const expense = await tx.expenses.findUnique({
@@ -165,9 +169,9 @@ export async function updateExpenses(expenseId: string, data: UpdateExpenseInput
             }
         })
         await Promise.all([
-            redisService.delete(`expense:${expenseId}`),
-            redisService.delete("expenses:all"),
-            redisService.deleteByPattern("expenses:filters:*"),
+            redisService.delete(`expense:${userId}:${expenseId}`),
+            redisService.delete(`expenses:${userId}:all`),
+            redisService.deleteByPattern(`expenses:${userId}:filters:*`),
         ])
 
         return updatedExpense
@@ -207,9 +211,9 @@ export async function deleteExpense(expenseId: string, userId: string) {
             }
         })
         await Promise.all([
-            redisService.delete(`expense:${expenseId}`),
-            redisService.delete("expenses:all"),
-            redisService.deleteByPattern("expenses:filters:*"),
+            redisService.delete(`expense:${userId}:${expenseId}`),
+            redisService.delete(`expenses:${userId}:all`),
+            redisService.deleteByPattern(`expenses:${userId}:filters:*`),
         ])
         return deletedExpense;
     })
@@ -232,8 +236,8 @@ export async function removeAllExpenses(userId: string) {
             }
         })
         await Promise.all([
-            redisService.delete("expenses:all"),
-            redisService.deleteByPattern("expenses:filters:*"),
+            redisService.delete(`expenses:${userId}:all`),
+            redisService.deleteByPattern(`expenses:${userId}:filters:*`),
         ])
         return dropAll;
     })
@@ -241,7 +245,7 @@ export async function removeAllExpenses(userId: string) {
 
 export async function getExpensesByFilter(userId: string, filters: ExpenseFilter, groupId?: string) {
     const { startDate, endDate } = getExpenseDateRange(filters)
-    const cacheKey = `expense:filters:${filters}`;
+    const cacheKey = `expense:filters:${userId}:filters:${filters}`;
     return cacheQuery(cacheKey, 300, async () => {
         return await prisma.$transaction(async (tx: any) => {
             if (groupId) {
