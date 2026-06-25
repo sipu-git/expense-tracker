@@ -1,16 +1,17 @@
 // src/store/slices/budgetsSlice.ts
 import { createSlice, PayloadAction, createSelector } from '@reduxjs/toolkit';
-import { Budget, Category } from '../../types';
+import { Budget } from '../../types';
 import { sampleBudgets } from '@/data/sampleData';
 import { RootState } from '../index';
 import { selectCategoryTotals } from './expensesSlice';
+import { ExpenseTypes } from '@/types/expense.type';
 
 const STORAGE_KEY = 'expense_tracker_budgets';
 const DEFAULT_ACCOUNT_KEY = '__default__';
 
 type BudgetByAccount = Record<string, Budget[]>;
 type BudgetPayload = Budget & { accountId?: string | null };
-type RemoveBudgetPayload = { category: Category; accountId?: string | null };
+type RemoveBudgetPayload = { category: ExpenseTypes; accountId?: string | null };
 
 const accountKey = (accountId?: string | null) => accountId ?? DEFAULT_ACCOUNT_KEY;
 

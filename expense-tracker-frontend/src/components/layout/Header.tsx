@@ -224,11 +224,11 @@ export default function Header() {
   const handleExport = () => {
     exportToCSV(
       expenses.map((e) => ({
-        Title: e.title,
+        Title: e.name,
         Amount: e.amount,
-        Category: e.category,
-        Date: e.date,
-        Notes: e.notes || '',
+        Category: e.type,
+        Date: e.bought_at,
+        // Notes: e.notes || '',
       })),
       `expenses-${format(new Date(), 'yyyy-MM-dd')}.csv`
     );

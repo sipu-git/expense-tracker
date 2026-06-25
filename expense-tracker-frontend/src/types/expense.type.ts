@@ -42,8 +42,8 @@ export interface Expense {
     accountId?: string;
     groupId?: string;
     created_by?: string;
-    createdAt: string;
-    updatedAt: string;
+    createdAt?: string;
+    updatedAt?: string;
 }
 
 export interface ExpenseStates {

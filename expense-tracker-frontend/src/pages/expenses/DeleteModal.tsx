@@ -32,7 +32,7 @@ export default function DeleteModal() {
         <p className="text-sm text-muted mb-1">
           Are you sure you want to delete
         </p>
-        <p className="text-sm font-semibold text-text mb-1">"{expense.title}"</p>
+        <p className="text-sm font-semibold text-text mb-1">"{expense.name}"</p>
         <p className="text-sm text-muted mb-5">
           {formatCurrency(expense.amount)} — This action cannot be undone.
         </p>

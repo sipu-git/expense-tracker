@@ -22,11 +22,11 @@ export default function Settings() {
   const handleExport = () => {
     exportToCSV(
       expense.map((e) => ({
-        Title: e.title,
+        Title: e.name,
         Amount: e.amount,
-        Category: e.category,
-        Date: e.date,
-        Notes: e.notes || '',
+        Category: e.type,
+        Date: e.bought_at,
+        // Notes: e.notes || '',
         'Created At': e.createdAt,
       })),
       `expenses-${format(new Date(), 'yyyy-MM-dd')}.csv`
