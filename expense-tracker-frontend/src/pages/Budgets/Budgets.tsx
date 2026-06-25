@@ -1,8 +1,15 @@
 // src/components/dashboard/Budgets.tsx
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Plus, AlertTriangle, CheckCircle, Trash2, TrendingUp } from 'lucide-react';
 import { useAppSelector, useAppDispatch } from '../../hooks/redux';
-import { selectBudgetStatus, setBudget, removeBudget } from '../../store/slices/budgetsSlice';
+import {
+  fetchBudgets,
+  removeBudget,
+  selectBudgetStatus,
+  selectBudgetsError,
+  selectBudgetsLoading,
+  setBudget,
+} from '../../store/slices/budgetsSlice';
 import { formatCurrency, cn } from '../../utils';
 import { selectActiveAccountId } from '@/store/slices/accountSlices/account.slice';
 import { CATEGORIES, CATEGORY_COLORS, CATEGORY_ICONS, ExpenseTypes } from '@/types/expense.type';
@@ -10,12 +17,18 @@ import { CATEGORIES, CATEGORY_COLORS, CATEGORY_ICONS, ExpenseTypes } from '@/typ
 export default function Budgets() {
   const dispatch = useAppDispatch();
   const budgetStatus = useAppSelector(selectBudgetStatus);
+  const loading = useAppSelector(selectBudgetsLoading);
+  const error = useAppSelector(selectBudgetsError);
   const activeAccountId = useAppSelector(selectActiveAccountId);
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState<{ category: ExpenseTypes; limit: string }>({
     category: 'FOOD',
     limit: '',
   });
+
+  useEffect(() => {
+    dispatch(fetchBudgets());
+  }, [dispatch, activeAccountId]);
 
   const handleAdd = () => {
     const limit = parseFloat(form.limit);
@@ -41,6 +54,12 @@ export default function Budgets() {
           Add Budget
         </button>
       </div>
+
+      {error && (
+        <div className="rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-500">
+          {error}
+        </div>
+      )}
 
       {/* Add form */}
       {showForm && (
@@ -88,7 +107,11 @@ export default function Budgets() {
       )}
 
       {/* Budget cards */}
-      {budgetStatus.length === 0 ? (
+      {loading && budgetStatus.length === 0 ? (
+        <div className="card text-center py-16">
+          <p className="text-base font-semibold text-text">Loading budgets...</p>
+        </div>
+      ) : budgetStatus.length === 0 ? (
         <div className="card text-center py-16">
           <p className="text-4xl mb-3">💰</p>
           <p className="text-base font-semibold text-text">No budgets set</p>

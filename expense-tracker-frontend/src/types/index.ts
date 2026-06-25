@@ -3,9 +3,13 @@ import { ExpenseTypes } from "./expense.type";
 
 
 export interface Budget {
+  id?: string;
   category: ExpenseTypes;
   limit: number;
   period: 'monthly' | 'weekly';
+  created_by?: string;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export interface User {

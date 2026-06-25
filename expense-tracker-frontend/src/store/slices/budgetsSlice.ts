@@ -1,77 +1,141 @@
-// src/store/slices/budgetsSlice.ts
-import { createSlice, PayloadAction, createSelector } from '@reduxjs/toolkit';
+import { createAsyncThunk, createSelector, createSlice } from '@reduxjs/toolkit';
 import { Budget } from '../../types';
-import { sampleBudgets } from '@/data/sampleData';
 import { RootState } from '../index';
 import { selectCategoryTotals } from './expensesSlice';
 import { ExpenseTypes } from '@/types/expense.type';
+import { budgetApis, BudgetPayload as BudgetApiPayload } from '@/services/budget.service';
+import { handleApiError } from '@/utils/apiError';
+import { switchAccount } from './accountSlices/account.slice';
 
-const STORAGE_KEY = 'expense_tracker_budgets';
-const DEFAULT_ACCOUNT_KEY = '__default__';
-
-type BudgetByAccount = Record<string, Budget[]>;
-type BudgetPayload = Budget & { accountId?: string | null };
+type SetBudgetPayload = Budget & { accountId?: string | null };
 type RemoveBudgetPayload = { category: ExpenseTypes; accountId?: string | null };
 
-const accountKey = (accountId?: string | null) => accountId ?? DEFAULT_ACCOUNT_KEY;
-
-function load(): BudgetByAccount {
-  try {
-    const s = localStorage.getItem(STORAGE_KEY);
-    if (s) {
-      const parsed = JSON.parse(s);
-      if (Array.isArray(parsed)) return { [DEFAULT_ACCOUNT_KEY]: parsed };
-      if (parsed && typeof parsed === 'object' && parsed.byAccountId) return parsed.byAccountId;
-      if (parsed && typeof parsed === 'object') return parsed;
-    }
-  } catch { }
-  return { [DEFAULT_ACCOUNT_KEY]: sampleBudgets };
-}
-
-function persist(byAccountId: BudgetByAccount) {
-  try { localStorage.setItem(STORAGE_KEY, JSON.stringify({ byAccountId })); } catch { }
-}
-
 interface BudgetsState {
-  byAccountId: BudgetByAccount;
+  budgets: Budget[];
+  loading: boolean;
+  error: string | null;
+  success: boolean;
 }
+
+const initialState: BudgetsState = {
+  budgets: [],
+  loading: false,
+  error: null,
+  success: false,
+};
+
+export const fetchBudgets = createAsyncThunk(
+  'budgets/viewAll',
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await budgetApis.viewBudgets();
+      return response.data.data as Budget[];
+    } catch (error) {
+      return rejectWithValue(handleApiError(error));
+    }
+  }
+);
+
+export const setBudget = createAsyncThunk(
+  'budgets/set',
+  async (payload: SetBudgetPayload, { rejectWithValue }) => {
+    try {
+      const data: BudgetApiPayload = {
+        category: payload.category,
+        limit: payload.limit,
+        period: payload.period ?? 'monthly',
+      };
+      const response = await budgetApis.addBudget(data);
+      return response.data.data as Budget;
+    } catch (error) {
+      return rejectWithValue(handleApiError(error));
+    }
+  }
+);
+
+export const removeBudget = createAsyncThunk(
+  'budgets/remove',
+  async (payload: RemoveBudgetPayload, { rejectWithValue }) => {
+    try {
+      const response = await budgetApis.deleteBudgetByCategory(payload.category);
+      return response.data.data as Budget;
+    } catch (error) {
+      return rejectWithValue(handleApiError(error));
+    }
+  }
+);
 
 const budgetsSlice = createSlice({
   name: 'budgets',
-  initialState: { byAccountId: load() } as BudgetsState,
+  initialState,
   reducers: {
-    setBudget(state, action: PayloadAction<BudgetPayload>) {
-      const key = accountKey(action.payload.accountId);
-      const items = state.byAccountId[key] ?? [];
-      const budget = {
-        category: action.payload.category,
-        limit: action.payload.limit,
-        period: action.payload.period,
-      };
-      const idx = items.findIndex((b) => b.category === budget.category);
-      if (idx !== -1) items[idx] = budget;
-      else items.push(budget);
-      state.byAccountId[key] = items;
-      persist(state.byAccountId);
-    },
-    removeBudget(state, action: PayloadAction<RemoveBudgetPayload>) {
-      const key = accountKey(action.payload.accountId);
-      state.byAccountId[key] = (state.byAccountId[key] ?? []).filter((b) => b.category !== action.payload.category);
-      persist(state.byAccountId);
-    },
+  },
+  extraReducers: (builder) => {
+    builder.addCase(switchAccount, (state) => {
+      state.budgets = [];
+      state.loading = false;
+      state.error = null;
+      state.success = false;
+    });
+
+    builder
+      .addCase(fetchBudgets.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchBudgets.fulfilled, (state, action) => {
+        state.loading = false;
+        state.budgets = action.payload;
+        state.error = null;
+      })
+      .addCase(fetchBudgets.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
+      });
+
+    builder
+      .addCase(setBudget.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+        state.success = false;
+      })
+      .addCase(setBudget.fulfilled, (state, action) => {
+        state.loading = false;
+        const idx = state.budgets.findIndex((budget) => budget.category === action.payload.category);
+        if (idx !== -1) state.budgets[idx] = action.payload;
+        else state.budgets.push(action.payload);
+        state.success = true;
+        state.error = null;
+      })
+      .addCase(setBudget.rejected, (state, action) => {
+        state.loading = false;
+        state.success = false;
+        state.error = action.payload as string;
+      });
+
+    builder
+      .addCase(removeBudget.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+        state.success = false;
+      })
+      .addCase(removeBudget.fulfilled, (state, action) => {
+        state.loading = false;
+        state.budgets = state.budgets.filter((budget) => budget.category !== action.payload.category);
+        state.success = true;
+        state.error = null;
+      })
+      .addCase(removeBudget.rejected, (state, action) => {
+        state.loading = false;
+        state.success = false;
+        state.error = action.payload as string;
+      });
   },
 });
 
-export const { setBudget, removeBudget } = budgetsSlice.actions;
-
-const selectActiveAccountId = (state: RootState) =>
-  (state.accounts as unknown as { activeAccountId: string | null }).activeAccountId;
-
-export const selectBudgets = createSelector(
-  (state: RootState) => state.budgets.byAccountId,
-  selectActiveAccountId,
-  (byAccountId, activeAccountId) => byAccountId[accountKey(activeAccountId)] ?? []
-);
+export const selectBudgets = (state: RootState) => state.budgets.budgets;
+export const selectBudgetsLoading = (state: RootState) => state.budgets.loading;
+export const selectBudgetsError = (state: RootState) => state.budgets.error;
 
 export const selectBudgetStatus = createSelector(
   selectBudgets,
