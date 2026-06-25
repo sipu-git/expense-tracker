@@ -21,7 +21,7 @@ export const suggestExpenseCategory = createAsyncThunk(
     "expense/suggestCategory",
     async ({ name, amount }: { name: string; amount: number }, { rejectWithValue }) => {
         try {
-            const res = await fetch("http://localhost:3000/api/automation/suggest-category", {
+            const res = await fetch("/api/automation/suggest-category", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 credentials: "include",
