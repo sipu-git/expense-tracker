@@ -1,7 +1,7 @@
 import express from 'express';
-import { authMiddleware } from '../../shared/middlewares/auth.middleware';
-import { asyncHandler } from '../../shared/middlewares/asyncHandler.middleware';
-import { autoCategorize } from './controllers/categorize.controller';
+import { authMiddleware } from '../../shared/middlewares/auth.middleware.js';
+import { asyncHandler } from '../../shared/middlewares/asyncHandler.middleware.js';
+import { autoCategorize } from './controllers/categorize.controller.js';
 
 const router = express.Router()
 
