@@ -1,5 +1,5 @@
-import { ExpenseType } from "../../../generated/prisma";
-import { geminiModel } from "../../shared/configs/gemini.config";
+import { ExpenseType } from "../../../generated/prisma/client.js";
+import { geminiModel } from "../../shared/configs/gemini.config.js";
 
 export async function categorizeExpense(
     name: string,
