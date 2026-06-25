@@ -1,6 +1,6 @@
 import { NextFunction, Request, Response } from "express";
-import { AppError } from "../../../../lib/AppError";
-import { categorizeExpense } from "../categorize-expenses.service";
+import { AppError } from "../../../../lib/AppError.js";
+import { categorizeExpense } from "../categorize-expenses.service.js";
 
 export const autoCategorize = async (req: Request, res: Response,next:NextFunction) => {
     try {
