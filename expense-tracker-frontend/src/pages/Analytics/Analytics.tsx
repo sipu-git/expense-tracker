@@ -32,7 +32,7 @@ export default function Analytics() {
   return (
     <div className="space-y-6">
       {/* Quick metrics */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid md:grid-cols-2 lg:grid-cols-4 grid-cols-1 gap-4">
         {[
           { label: 'Total Transactions', value: monthExpenses.length.toString() },
           { label: 'Avg Transaction', value: formatCurrency(avgExpense) },
