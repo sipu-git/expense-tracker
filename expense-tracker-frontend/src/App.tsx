@@ -16,6 +16,7 @@ import VerifyPasswordOtp from "./pages/auth/VerifyOtpPage";
 import ResetPassword from "./pages/auth/ResetPasswordPage";
 import AddExpensePage from "./pages/expenses/AddExpenses";
 import { selectActiveAccount, selectIsAuthenticatedFromAccounts } from "./store/slices/accountSlices/account.slice";
+import EditExpensePage from "./pages/expenses/EditExpense";
 // import AppLayout from "./components/layout/AppLayout";
 
 function LoginRoute({ isAuthenticated }: { isAuthenticated: boolean }) {
@@ -72,13 +73,7 @@ export default function App() {
     <BrowserRouter>
       <Routes>
 
-        <Route path="/" element={<Navigate to={isAuthenticated
-          ? "/dashboard"
-          : "/login"}
-          replace
-        />
-        }
-        />
+        <Route path="/" element={<Navigate to={isAuthenticated ? "/dashboard" : "/login"} replace />}/>
 
         <Route
           path="/login"
@@ -96,7 +91,8 @@ export default function App() {
 
             <Route path="/expenses" element={<ExpensesList />} />
             <Route path="/add-expense" element={<AddExpensePage />} />
-
+            <Route path="/edit-expense/:expenseId" element={<EditExpensePage />} />
+    
             <Route
               path="/analytics"
               element={<Analytics />}

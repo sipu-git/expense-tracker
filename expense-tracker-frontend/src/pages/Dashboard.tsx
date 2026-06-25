@@ -17,7 +17,7 @@ import CategoryPieChart from '../components/charts/CategoryPieChart';
 import MonthlyLineChart from '../components/charts/MonthlyLineChart';
 import ExpenseRow from './expenses/ExpenseRow';
 import { formatCurrency, formatDate } from '../utils';
-import { CATEGORY_COLORS } from '../types';
+import { CATEGORY_COLORS } from '@/types/expense.type';
 
 export default function Dashboard() {
   const dispatch = useAppDispatch();

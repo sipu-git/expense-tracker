@@ -3,17 +3,17 @@ import React, { useState } from 'react';
 import { Plus, AlertTriangle, CheckCircle, Trash2, TrendingUp } from 'lucide-react';
 import { useAppSelector, useAppDispatch } from '../../hooks/redux';
 import { selectBudgetStatus, setBudget, removeBudget } from '../../store/slices/budgetsSlice';
-import { CATEGORIES, CATEGORY_ICONS, CATEGORY_COLORS, Category } from '../../types';
 import { formatCurrency, cn } from '../../utils';
 import { selectActiveAccountId } from '@/store/slices/accountSlices/account.slice';
+import { CATEGORIES, CATEGORY_COLORS, CATEGORY_ICONS, ExpenseTypes } from '@/types/expense.type';
 
 export default function Budgets() {
   const dispatch = useAppDispatch();
   const budgetStatus = useAppSelector(selectBudgetStatus);
   const activeAccountId = useAppSelector(selectActiveAccountId);
   const [showForm, setShowForm] = useState(false);
-  const [form, setForm] = useState<{ category: Category; limit: string }>({
-    category: 'Food & Dining',
+  const [form, setForm] = useState<{ category: ExpenseTypes; limit: string }>({
+    category: 'FOOD',
     limit: '',
   });
 
@@ -21,7 +21,7 @@ export default function Budgets() {
     const limit = parseFloat(form.limit);
     if (!limit || limit <= 0) return;
     dispatch(setBudget({ category: form.category, limit, period: 'monthly', accountId: activeAccountId }));
-    setForm({ category: 'Food & Dining', limit: '' });
+    setForm({ category: 'FOOD', limit: '' });
     setShowForm(false);
   };
 
@@ -52,7 +52,7 @@ export default function Budgets() {
               <select
                 className="form-input"
                 value={form.category}
-                onChange={(e) => setForm((f) => ({ ...f, category: e.target.value as Category }))}
+                onChange={(e) => setForm((f) => ({ ...f, category: e.target.value as ExpenseTypes }))}
               >
                 {CATEGORIES.map((c) => (
                   <option key={c} value={c}>{CATEGORY_ICONS[c]} {c}</option>

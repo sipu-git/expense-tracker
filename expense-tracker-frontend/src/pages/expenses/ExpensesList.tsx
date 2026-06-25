@@ -1,24 +1,22 @@
 // src/components/expenses/ExpensesList.tsx
 import React, { useEffect, useMemo, useState } from 'react';
-import { Search, SlidersHorizontal, Plus, ChevronDown, ChevronUp } from 'lucide-react';
+import { Search, SlidersHorizontal, Plus, Pencil, Trash2 } from 'lucide-react';
 import { useAppSelector, useAppDispatch } from '../../hooks/redux';
 import { selectExpensesByDay, setFilters, clearFilters } from '../../store/slices/expensesSlice';
 import { openModal } from '../../store/slices/uiSlice';
-import { CATEGORIES, CATEGORY_ICONS, Category } from '../../types';
-import ExpenseRow from './ExpenseRow';
 import { formatCurrency, formatDate, cn } from '../../utils';
 import { useNavigate } from 'react-router-dom';
 import { format, subMonths } from 'date-fns';
+import { CATEGORIES, CATEGORY_COLORS, CATEGORY_ICONS, ExpenseTypes } from '@/types/expense.type';
 
 export default function ExpensesList() {
   const dispatch = useAppDispatch();
   const groups = useAppSelector(selectExpensesByDay);
   const [search, setSearch] = useState('');
-  const [selectedCats, setSelectedCats] = useState<Category[]>([]);
+  const [selectedCats, setSelectedCats] = useState<ExpenseTypes[]>([]);
   const [showFilters, setShowFilters] = useState(false);
-  const [expandedDays, setExpandedDays] = useState<Record<string, boolean>>({});
   const navigate = useNavigate();
-  const [selectMonth, setSelectMonth] = useState(format(new Date(), 'yyyy-MM'))
+  const [selectMonth, setSelectMonth] = useState(format(new Date(), 'yyyy-MM'));
 
   const monthOptions = useMemo(() => {
     return Array.from({ length: 12 }, (_, i) => {
@@ -30,7 +28,7 @@ export default function ExpensesList() {
     });
   }, []);
 
-  const applyFilters = (s: string, cats: Category[], month: string) => {
+  const applyFilters = (s: string, cats: ExpenseTypes[], month: string) => {
     dispatch(setFilters({ search: s || undefined, categories: cats.length ? cats : undefined, month: month || undefined }));
   };
 
@@ -39,17 +37,19 @@ export default function ExpensesList() {
     applyFilters(val, selectedCats, selectMonth);
   };
 
-  const toggleCat = (cat: Category) => {
+  const toggleCat = (cat: ExpenseTypes) => {
     const next = selectedCats.includes(cat)
       ? selectedCats.filter((c) => c !== cat)
       : [...selectedCats, cat];
     setSelectedCats(next);
     applyFilters(search, next, selectMonth);
   };
+
   const handleMonthChange = (month: string) => {
     setSelectMonth(month);
     applyFilters(search, selectedCats, month);
   };
+
   const handleClear = () => {
     setSearch('');
     setSelectedCats([]);
@@ -60,14 +60,12 @@ export default function ExpensesList() {
     applyFilters(search, selectedCats, selectMonth);
   }, []);
 
-  const toggleDay = (date: string) =>
-    setExpandedDays((prev) => ({ ...prev, [date]: !prev[date] }));
-
   const totalExpenses = groups.reduce((s, g) => s + g.expenses.length, 0);
 
   return (
     <div className="space-y-4">
-      {/* Search + filter bar */}
+
+      {/* ── Search + filter bar ── */}
       <div className="card">
         <div className="flex lg:flex-row flex-col gap-2">
           <div className="relative flex-1">
@@ -86,9 +84,7 @@ export default function ExpensesList() {
               className="px-3 py-2 rounded-xl text-sm font-medium border border-border text-text bg-card hover:border-accent/50 transition-all outline-none cursor-pointer"
             >
               {monthOptions.map((opt) => (
-                <option key={opt.value} value={opt.value}>
-                  {opt.label}
-                </option>
+                <option key={opt.value} value={opt.value}>{opt.label}</option>
               ))}
             </select>
             <button
@@ -109,7 +105,7 @@ export default function ExpensesList() {
               )}
             </button>
             <button
-              onClick={() => navigate("/add-expense")}
+              onClick={() => navigate('/add-expense')}
               className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold bg-accent text-white hover:bg-accent-hover transition-all shadow-md shadow-accent/25"
             >
               <Plus size={15} />
@@ -148,7 +144,7 @@ export default function ExpensesList() {
         )}
       </div>
 
-      {/* Summary */}
+      {/* ── Summary ── */}
       <div className="flex items-center justify-between px-1">
         <p className="text-sm text-muted">
           <span className="font-semibold text-text">{totalExpenses}</span> expenses across{' '}
@@ -159,7 +155,7 @@ export default function ExpensesList() {
         </p>
       </div>
 
-      {/* Grouped by day */}
+      {/* ── Grouped by day ── */}
       {groups.length === 0 ? (
         <div className="card text-center py-16">
           <p className="text-4xl mb-3">📭</p>
@@ -167,40 +163,87 @@ export default function ExpensesList() {
           <p className="text-sm text-muted mt-1">Try adjusting your filters or add a new expense</p>
         </div>
       ) : (
-        <div className="space-y-3">
-          {groups.map((group) => {
-            const isExpanded = expandedDays[group.date] !== false; // default expanded
-            return (
-              <div key={group.date} className="card overflow-hidden">
-                <button
-                  onClick={() => toggleDay(group.date)}
-                  className="w-full flex items-center justify-between hover:bg-hover lg:-mx-5 -mt-4 lg:px-5 px-1 rounded-xl pt-4 pb-3 mb-2 transition-colors"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-lg bg-accent/10 flex items-center justify-center text-xs font-bold text-accent">
-                      {new Date(group.date + 'T12:00:00').getDate()}
-                    </div>
-                    <div className="text-left">
-                      <p className="text-sm font-bold text-text">{formatDate(group.date, 'EEEE, MMMM d')}</p>
-                      <p className="text-xs text-muted">{group.expenses.length} expense{group.expenses.length !== 1 ? 's' : ''}</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <span className="text-sm font-bold text-text">{formatCurrency(group.total)}</span>
-                    {isExpanded ? <ChevronUp size={16} className="text-muted" /> : <ChevronDown size={16} className="text-muted" />}
-                  </div>
-                </button>
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
+          {groups.map((group) => (
+            <div key={group.date} className="card overflow-hidden">
 
-                {isExpanded && (
-                  <div className="-mx-2 space-y-0.5">
-                    {group.expenses.map((e) => (
-                      <ExpenseRow key={e.id} expense={e} />
-                    ))}
+              {/* ── Day header ── */}
+              <div className="flex items-center justify-between pb-3 mb-1 border-b border-border">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-lg bg-accent/10 flex items-center justify-center text-xs font-bold text-accent">
+                    {new Date(group.date + 'T12:00:00').getDate()}
                   </div>
-                )}
+                  <div>
+                    <p className="text-sm font-bold text-text">{formatDate(group.date, 'EEEE, MMMM d')}</p>
+                    <p className="text-xs text-muted">
+                      {group.expenses.length} expense{group.expenses.length !== 1 ? 's' : ''}
+                    </p>
+                  </div>
+                </div>
+                <span className="text-sm font-bold text-text">{formatCurrency(group.total)}</span>
               </div>
-            );
-          })}
+
+              {/* ── Expense rows ── */}
+              <div className="space-y-1">
+                {group.expenses.map((expense) => {
+                  const color = CATEGORY_COLORS[expense.type as ExpenseTypes];
+                  const emoji = CATEGORY_ICONS[expense.type as ExpenseTypes];
+                  return (
+                    <div
+                      key={expense.id}
+                      className="flex items-center gap-3 py-2.5 px-2 rounded-xl hover:bg-hover transition-colors group"
+                    >
+                      {/* Category icon */}
+                      <div
+                        className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 text-base"
+                        style={{ backgroundColor: `${color}20` }}
+                      >
+                        {emoji}
+                      </div>
+
+                      {/* Info */}
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold text-text truncate">{expense.name}</p>
+                        <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                          <span
+                            className="text-xs font-medium px-1.5 py-0.5 rounded-full capitalize"
+                            style={{ color, backgroundColor: `${color}20` }}
+                          >
+                            {expense.type}
+                          </span>
+                          {expense.quantity && Number(expense.quantity) !== 1 && (
+                            <span className="text-xs text-muted">×{expense.quantity}</span>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Amount */}
+                      <p className="text-sm font-bold text-text flex-shrink-0">
+                        {formatCurrency(expense.amount)}
+                      </p>
+
+                      {/* Actions */}
+                      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
+                        <button
+                          onClick={() => navigate(`/edit-expense/${expense.id}`)}
+                          className="p-1.5 rounded-lg hover:bg-accent/10 text-muted hover:text-accent transition-colors"
+                        >
+                          <Pencil size={13} />
+                        </button>
+                        <button
+                          onClick={() => dispatch(openModal({ type: 'delete', expenseId: expense.id }))}
+                          className="p-1.5 rounded-lg hover:bg-red-500/10 text-muted hover:text-red-500 transition-colors"
+                        >
+                          <Trash2 size={13} />
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+            </div>
+          ))}
         </div>
       )}
     </div>

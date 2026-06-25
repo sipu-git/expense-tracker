@@ -10,13 +10,13 @@ import {
 import SpendingBarChart from '../../components/charts/SpendingBarChart';
 import CategoryPieChart from '../../components/charts/CategoryPieChart';
 import MonthlyLineChart from '../../components/charts/MonthlyLineChart';
-import { CATEGORY_COLORS, CATEGORY_ICONS } from '../../types';
 import { formatCurrency } from '../../utils';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell
 } from 'recharts';
 import { useAppSelector as useSelector } from '../../hooks/redux';
 import { selectTheme } from '../../store/slices/uiSlice';
+import { CATEGORY_COLORS, CATEGORY_ICONS } from '@/types/expense.type';
 
 export default function Analytics() {
   const categoryTotals = useAppSelector(selectCategoryTotals);

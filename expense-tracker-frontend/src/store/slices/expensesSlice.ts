@@ -6,8 +6,7 @@ import {
   viewExpenses as viewExpensesThunk,
   deleteAllExpenses as deleteAllExpensesThunk
 } from './expenseSlice/expenses.slice';
-import { Expense as ApiExpense } from '../../types/expense.type';
-import { Category, Expense, ExpenseFilters } from '../../types';
+import { Expense as ApiExpense, Expense, ExpenseTypes } from '../../types/expense.type';
 import {
   endOfMonth,
   format,
@@ -16,6 +15,7 @@ import {
   startOfMonth,
 } from 'date-fns';
 import { RootState } from '../index';
+import { ExpenseFilters } from '@/types';
 
 interface ExpensesUiState {
   filters: ExpenseFilters;
@@ -25,7 +25,7 @@ const initialState: ExpensesUiState = {
   filters: {},
 };
 
-const TYPE_TO_CATEGORY: Record<string, Category> = {
+const TYPE_TO_CATEGORY: Record<ExpenseTypes, string> = {
   FOOD: 'Food & Dining',
   TRANSPORTATION: 'Transportation',
   SHOPPING: 'Shopping',
@@ -38,6 +38,7 @@ const TYPE_TO_CATEGORY: Record<string, Category> = {
   OTHER: 'Other',
 };
 
+
 const normalizeDate = (value?: string) => {
   if (!value) return format(new Date(), 'yyyy-MM-dd');
   const parsed = new Date(value);
@@ -46,17 +47,17 @@ const normalizeDate = (value?: string) => {
 };
 
 const normalizeExpense = (expense: ApiExpense | any): Expense => {
-  const category = TYPE_TO_CATEGORY[expense.type] ?? 'Other';
+  const category = TYPE_TO_CATEGORY[expense.type as ExpenseTypes] ?? 'Other';
   const createdAt = expense.createdAt ?? expense.created_at ?? expense.bought_at ?? new Date().toISOString();
   const updatedAt = expense.updatedAt ?? expense.updated_at ?? createdAt;
 
   return {
     id: expense.id,
-    title: expense.name ?? expense.title ?? 'Untitled expense',
+    name: expense.name ?? expense.title ?? 'Untitled expense',
     amount: Number(expense.amount) || 0,
-    category,
-    date: normalizeDate(expense.bought_at ?? expense.date ?? createdAt),
-    notes: expense.group?.name ? `Group: ${expense.group.name}` : undefined,
+    type: expense.type ?? category,
+    bought_at: normalizeDate(expense.bought_at ?? expense.date ?? createdAt),
+    // notes: expense.group?.name ? `Group: ${expense.group.name}` : undefined,
     createdAt,
     updatedAt,
   };
@@ -95,14 +96,14 @@ export const selectFilteredExpenses = createSelector(
     return items.filter((e) => {
       if (filters.search) {
         const q = filters.search.toLowerCase();
-        if (!e.title.toLowerCase().includes(q) && !e.category.toLowerCase().includes(q)) return false;
+        if (!e.name.toLowerCase().includes(q) && !e.type.toLowerCase().includes(q)) return false;
       }
-      if (filters.categories?.length && !filters.categories.includes(e.category)) return false;
-      if (filters.dateFrom && e.date < filters.dateFrom) return false;
-      if (filters.dateTo && e.date > filters.dateTo) return false;
+      if (filters.categories?.length && !filters.categories.includes(e.type)) return false;
+      if (filters.dateFrom && e.bought_at < filters.dateFrom) return false;
+      if (filters.dateTo && e.bought_at > filters.dateTo) return false;
       if (filters.minAmount != null && e.amount < filters.minAmount) return false;
       if (filters.maxAmount != null && e.amount > filters.maxAmount) return false;
-      if (filters.month && !e.date.startsWith(filters.month)) return false;
+      if (filters.month && !e.bought_at.startsWith(filters.month)) return false;
       return true;
     });
   }
@@ -110,7 +111,7 @@ export const selectFilteredExpenses = createSelector(
 
 export const selectTodayExpenses = createSelector(selectAllExpenses, (items) => {
   const today = format(new Date(), 'yyyy-MM-dd');
-  return items.filter((e) => e.date === today);
+  return items.filter((e) => e.bought_at === today);
 });
 
 export const selectTodayTotal = createSelector(selectTodayExpenses, (items) =>
@@ -122,7 +123,7 @@ export const selectMonthExpenses = createSelector(selectAllExpenses, (items) => 
   const start = startOfMonth(now);
   const end = endOfMonth(now);
   return items.filter((e) => {
-    const d = parseISO(e.date);
+    const d = parseISO(e.bought_at);
     return !Number.isNaN(d.getTime()) && isWithinInterval(d, { start, end });
   });
 });
@@ -134,14 +135,14 @@ export const selectMonthTotal = createSelector(selectMonthExpenses, (items) =>
 export const selectCategoryTotals = createSelector(selectMonthExpenses, (items) => {
   const totals: Record<string, { total: number; count: number }> = {};
   items.forEach((e) => {
-    if (!totals[e.category]) totals[e.category] = { total: 0, count: 0 };
-    totals[e.category].total += e.amount;
-    totals[e.category].count += 1;
+    if (!totals[e.type]) totals[e.type] = { total: 0, count: 0 };
+    totals[e.type].total += e.amount;
+    totals[e.type].count += 1;
   });
   const grandTotal = Object.values(totals).reduce((s, v) => s + v.total, 0);
   return Object.entries(totals)
     .map(([category, { total, count }]) => ({
-      category: category as Category,
+      category: category as ExpenseTypes,
       total,
       count,
       percentage: grandTotal ? (total / grandTotal) * 100 : 0,
@@ -152,9 +153,9 @@ export const selectCategoryTotals = createSelector(selectMonthExpenses, (items) 
 export const selectDailyTotals = createSelector(selectAllExpenses, (items) => {
   const totals: Record<string, { total: number; count: number }> = {};
   items.forEach((e) => {
-    if (!totals[e.date]) totals[e.date] = { total: 0, count: 0 };
-    totals[e.date].total += e.amount;
-    totals[e.date].count += 1;
+    if (!totals[e.bought_at]) totals[e.bought_at] = { total: 0, count: 0 };
+    totals[e.bought_at].total += e.amount;
+    totals[e.bought_at].count += 1;
   });
   return Object.entries(totals)
     .map(([date, { total, count }]) => ({ date, total, count }))
@@ -165,8 +166,8 @@ export const selectDailyTotals = createSelector(selectAllExpenses, (items) => {
 export const selectExpensesByDay = createSelector(selectFilteredExpenses, (items) => {
   const groups: Record<string, Expense[]> = {};
   items.forEach((e) => {
-    if (!groups[e.date]) groups[e.date] = [];
-    groups[e.date].push(e);
+    if (!groups[e.bought_at]) groups[e.bought_at] = [];
+    groups[e.bought_at].push(e);
   });
   return Object.entries(groups)
     .map(([date, expenses]) => ({

@@ -1,32 +1,33 @@
-import React, { useState } from 'react';
-import {Wallet,BarChart3,Bell,Users,DollarSign,Hash,Calendar,Tag,
-  Loader2,CheckCircle2,ChevronRight,Lock,FileText,Zap,ShieldCheck,ArrowLeft,
+import React, { useEffect, useState } from 'react';
+import {
+  Wallet, BarChart3, Bell, Users, DollarSign, Hash, Calendar, Tag,
+  Loader2, CheckCircle2, ChevronRight, Lock, FileText, Zap, ShieldCheck, ArrowLeft,
 } from 'lucide-react';
 import { Expense, ExpenseTypes } from '@/types/expense.type';
 import { format } from 'date-fns';
 import { cn } from '@/utils';
 import { useNavigate } from 'react-router-dom';
 import { useAppDispatch, useAppSelector } from '@/hooks/redux';
-import { addExpense } from '@/store/slices/expenseSlice/expenses.slice';
+import { addExpense, clearSuggestion, suggestExpenseCategory } from '@/store/slices/expenseSlice/expenses.slice';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-const EXPENSE_TYPES: ExpenseTypes[] = [
+export const EXPENSE_TYPES: ExpenseTypes[] = [
   'FOOD', 'TRANSPORTATION', 'SHOPPING', 'ENTERTAINMENT',
   'HEALTHCARE', 'UTILITIES', 'HOUSING', 'TRAVEL', 'EDUCATION', 'OTHER',
 ];
 
 const TYPE_META: Record<ExpenseTypes, { icon: string; label: string }> = {
-  FOOD:           { icon: '🍽️', label: 'Food' },
+  FOOD: { icon: '🍽️', label: 'Food' },
   TRANSPORTATION: { icon: '🚗', label: 'Transport' },
-  SHOPPING:       { icon: '🛍️', label: 'Shopping' },
-  ENTERTAINMENT:  { icon: '🎬', label: 'Fun' },
-  HEALTHCARE:     { icon: '🏥', label: 'Health' },
-  UTILITIES:      { icon: '💡', label: 'Utilities' },
-  HOUSING:        { icon: '🏠', label: 'Housing' },
-  TRAVEL:         { icon: '✈️', label: 'Travel' },
-  EDUCATION:      { icon: '📚', label: 'Education' },
-  OTHER:          { icon: '📦', label: 'Other' },
+  SHOPPING: { icon: '🛍️', label: 'Shopping' },
+  ENTERTAINMENT: { icon: '🎬', label: 'Fun' },
+  HEALTHCARE: { icon: '🏥', label: 'Health' },
+  UTILITIES: { icon: '💡', label: 'Utilities' },
+  HOUSING: { icon: '🏠', label: 'Housing' },
+  TRAVEL: { icon: '✈️', label: 'Travel' },
+  EDUCATION: { icon: '📚', label: 'Education' },
+  OTHER: { icon: '📦', label: 'Other' },
 };
 
 // ─── Left panel static data ───────────────────────────────────────────────────
@@ -63,7 +64,7 @@ const FEATURES = [
 ];
 
 const HOW_IT_WORKS = [
-  { n: 1, title: 'Fill the form',   desc: "Name, amount, category, quantity, and date. That's it." },
+  { n: 1, title: 'Fill the form', desc: "Name, amount, category, quantity, and date. That's it." },
   { n: 2, title: 'Pick a category', desc: 'Choose from 10 types to keep your data clean and filterable.' },
   { n: 3, title: 'Track over time', desc: 'Your dashboard updates the moment you submit.' },
   { n: 4, title: 'Export or share', desc: 'Attach a group ID to split costs across people.' },
@@ -95,21 +96,21 @@ const TERMS = [
 // ─── Form state ───────────────────────────────────────────────────────────────
 
 type FormState = {
-  name:     string;
-  amount:   number | '';
-  type:     ExpenseTypes;
+  name: string;
+  amount: number | '';
+  type: ExpenseTypes;
   quantity?: string;
   bought_at: string;
-  groupId:  string;
+  groupId: string;
 };
 
 const EMPTY: FormState = {
-  name:      '',
-  amount:    '',
-  type:      'FOOD',
-  quantity:  '1',
+  name: '',
+  amount: '',
+  type: 'FOOD',
+  quantity: '1',
   bought_at: format(new Date(), 'yyyy-MM-dd'),
-  groupId:   '',
+  groupId: '',
 };
 
 // ─── Shared primitives ────────────────────────────────────────────────────────
@@ -126,8 +127,8 @@ function SectionLabel({
 }) {
   const colorMap = {
     violet: 'text-violet-600 dark:text-violet-400',
-    teal:   'text-teal-600 dark:text-teal-400',
-    amber:  'text-amber-600 dark:text-amber-400',
+    teal: 'text-teal-600 dark:text-teal-400',
+    amber: 'text-amber-600 dark:text-amber-400',
   };
   return (
     <p className={cn('text-[10px] font-semibold uppercase tracking-[0.12em] mb-2', colorMap[color])}>
@@ -322,8 +323,8 @@ function LeftPanel() {
       {/* Stats strip */}
       <div className="grid grid-cols-3 gap-2">
         {[
-          { v: '10s',  l: 'to log' },
-          { v: '10',   l: 'categories' },
+          { v: '10s', l: 'to log' },
+          { v: '10', l: 'categories' },
           { v: '100%', l: 'your data' },
         ].map(({ v, l }) => (
           <div
@@ -347,15 +348,26 @@ function LeftPanel() {
 // ─── Right panel — the form ───────────────────────────────────────────────────
 
 function ExpenseForm() {
-  const dispatch   = useAppDispatch();
-  const loading    = useAppSelector((s: any) => s.expense.loading);
-  const storeError = useAppSelector((s: any) => s.expense.error);
-  const navigate   = useNavigate();
-
-  const [form, setForm]     = useState<FormState>(EMPTY);
+  const dispatch = useAppDispatch();
+  const { loading, error: storeError, suggestCategory, categoryLoading } = useAppSelector((s) => s.expense);
+  const navigate = useNavigate();
+  const [form, setForm] = useState<FormState>(EMPTY);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [success, setSuccess] = useState(false);
+  const [aiSuggested, setAiSuggested] = useState(false);
+  const [manualType, setManualType] = useState(false);
+  const [aiPending, setAiPending] = useState(false);
 
+  useEffect(() => {
+    if (suggestCategory && !manualType) {
+      set('type', suggestCategory as ExpenseTypes);
+      setAiSuggested(true);
+    }
+  }, [suggestCategory]);
+
+  useEffect(() => {
+    return () => { dispatch(clearSuggestion()); };
+  }, []);
   const set = <K extends keyof FormState>(key: K, val: FormState[K]) =>
     setForm((f) => ({ ...f, [key]: val }));
 
@@ -373,13 +385,31 @@ function ExpenseForm() {
     return Object.keys(e).length === 0;
   };
 
+  useEffect(() => {
+    if (!form.name.trim() || form.amount === '' || manualType) return;
+    setAiPending(true);
+
+    const timer = setTimeout(() => {
+      setAiPending(false);
+      dispatch(suggestExpenseCategory({
+        name: form.name,
+        amount: Number(form.amount)
+      }));
+    }, 800);
+
+    return () => {
+      clearTimeout(timer);
+      setAiPending(false);
+    };
+  }, [form.name, form.amount]);
+
   const handleSubmit = async () => {
     if (!validate()) return;
     const payload: Partial<Expense> = {
-      name:      form.name.trim(),
-      amount:    Number(form.amount),
-      type:      form.type,
-      quantity:  form.quantity,
+      name: form.name.trim(),
+      amount: Number(form.amount),
+      type: form.type,
+      quantity: form.quantity,
       bought_at: new Date(`${form.bought_at}T00:00:00`).toISOString(),
       ...(form.groupId ? { groupId: form.groupId } : {}),
     };
@@ -441,19 +471,24 @@ function ExpenseForm() {
 
       <div className="flex flex-col gap-4 flex-1">
         {/* Amount + Quantity */}
+        {/* Amount + Quantity */}
         <div className="grid lg:grid-cols-3 md:grid-cols-3 grid-cols-1 gap-3">
           <Field label="Expense name" icon={Tag} error={errors.name}>
-          <input
-            className={inputBase(!!errors.name)}
-            placeholder="e.g. Grocery run"
-            value={form.name}
-            onChange={(e) => {
-              set('name', e.target.value);
-              if (errors.name) setErrors((prev) => { const n = { ...prev }; delete n.name; return n; });
-            }}
-            disabled={loading}
-          />
-        </Field>
+            <input
+              className={inputBase(!!errors.name)}
+              placeholder="e.g. Grocery run"
+              value={form.name}
+              onChange={(e) => {
+                set('name', e.target.value);
+                setAiSuggested(false);
+                setManualType(false);
+                dispatch(clearSuggestion());
+                if (errors.name) setErrors((prev) => { const n = { ...prev }; delete n.name; return n; });
+              }}
+              disabled={loading}
+            />
+          </Field>
+
           <Field label="Amount" icon={DollarSign} error={errors.amount}>
             <div className="relative">
               <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 text-sm select-none">
@@ -492,18 +527,58 @@ function ExpenseForm() {
           </Field>
         </div>
 
+        {/* ← AI status row sits HERE, outside the grid, below name+amount */}
+        {(aiPending || categoryLoading || aiSuggested) && (
+          <div className="flex items-center gap-1.5 -mt-2">
+            {(aiPending || categoryLoading) && (
+              <span className="flex items-center gap-1 text-[11px] text-violet-500 dark:text-violet-400">
+                <Loader2 size={11} className="animate-spin" />
+                AI is detecting category…
+              </span>
+            )}
+            {aiSuggested && !aiPending && !categoryLoading && (
+              <span className="flex items-center gap-1 text-[11px] text-emerald-500 dark:text-emerald-400">
+                <CheckCircle2 size={11} />
+                Category auto-selected — override below if needed
+              </span>
+            )}
+          </div>
+        )}
+
         {/* Category picker */}
         <div className="flex flex-col gap-1.5">
-          <label className="text-[11px] font-medium text-slate-500 dark:text-slate-400">
-            Category
-          </label>
-          <div className="grid lg:grid-cols-3 grid-cols-2 gri gap-3">
+          {/* Label row — AI badge sits here */}
+          <div className="flex items-center gap-2">
+            <label className="text-[11px] font-medium text-slate-500 dark:text-slate-400">
+              Category
+            </label>
+            {categoryLoading && (
+              <span className="flex items-center gap-1 text-[10px] text-violet-500 dark:text-violet-400">
+                <Loader2 size={10} className="animate-spin" />
+                AI suggesting…
+              </span>
+            )}
+            {aiSuggested && !categoryLoading && (
+              <span className="flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[9px] font-medium bg-violet-100 dark:bg-violet-900/30 text-violet-600 dark:text-violet-400 border border-violet-200 dark:border-violet-700/40">
+                <Zap size={8} />
+                AI suggested — you can override
+              </span>
+            )}
+          </div>
+
+          {/* Category buttons */}
+          <div className="grid lg:grid-cols-3 grid-cols-2 gap-3">
             {EXPENSE_TYPES.map((t) => (
               <button
                 key={t}
                 type="button"
-                disabled={loading}
-                onClick={() => set('type', t)}
+                disabled={loading || categoryLoading}
+                onClick={() => {
+                  set('type', t);
+                  setManualType(true);
+                  setAiSuggested(false);
+                  dispatch(clearSuggestion());
+                }}
                 className={cn(
                   'flex items-center gap-2 px-3 py-2 rounded-lg text-[12px] font-medium border transition-all duration-100 disabled:opacity-50',
                   form.type === t
@@ -516,6 +591,18 @@ function ExpenseForm() {
               </button>
             ))}
           </div>
+
+          {/* Helper text below grid */}
+          {!manualType && !categoryLoading && !aiSuggested && (
+            <p className="text-[10px] text-slate-400 dark:text-slate-500">
+              Fill in the name field — AI will auto-suggest a category.
+            </p>
+          )}
+          {manualType && (
+            <p className="text-[10px] text-slate-400 dark:text-slate-500">
+              Manually selected — AI suggestion overridden.
+            </p>
+          )}
         </div>
 
         {/* Date */}

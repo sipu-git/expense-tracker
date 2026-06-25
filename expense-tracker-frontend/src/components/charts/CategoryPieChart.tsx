@@ -1,8 +1,9 @@
 // src/components/charts/CategoryPieChart.tsx
 import React from 'react';
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts';
-import { CategoryTotal, CATEGORY_COLORS } from '../../types';
+import { CategoryTotal } from '../../types';
 import { formatCurrency } from '../../utils';
+import { CATEGORY_COLORS } from '@/types/expense.type';
 
 interface Props { data: CategoryTotal[]; }
 
