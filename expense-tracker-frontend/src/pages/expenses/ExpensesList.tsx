@@ -217,11 +217,6 @@ export default function ExpensesList() {
                         </div>
                       </div>
 
-                      {/* Amount */}
-                      <p className="text-sm font-bold text-text flex-shrink-0">
-                        {formatCurrency(expense.amount)}
-                      </p>
-
                       {/* Actions */}
                       <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
                         <button
