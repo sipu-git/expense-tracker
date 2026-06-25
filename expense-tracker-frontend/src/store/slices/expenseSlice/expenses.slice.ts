@@ -21,13 +21,12 @@ export const suggestExpenseCategory = createAsyncThunk(
     "expense/suggestCategory",
     async ({ name, amount }: { name: string; amount: number }, { rejectWithValue }) => {
         try {
-            const res = await fetch("https://expense-tracker-1-6m9p.onrender.com/api/automation/suggest-category", {
+            const res = await fetch("/api/automation/suggest-category", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 credentials: "include",
                 body: JSON.stringify({ name, amount }),
-            });
-            const data = await res.json();
+            }); const data = await res.json();
             if (!data.success) throw new Error(data.message);
             return data.type as string;
         } catch (error: any) {
