@@ -5,6 +5,8 @@ import userRoutes from "./src/modules/user-service/user.routes.js";
 import groupRoutes from "./src/modules/group-service/group.routes.js";
 import expenseRoutes from "./src/modules/expense-service/expenses.routes.js";
 import authRoutes from './src/modules/auth-service/auth.routes.js';
+import automationRoutes from './src/modules/automation-services/automation.routes.js';
+
 // import notificationRoutes from './src/modules/notification-service/notification.routes.ts'
 import cookiesParser from "cookie-parser";
 import { globalErrorHandler } from "./src/shared/middlewares/error.middleware.js";
@@ -30,6 +32,7 @@ app.use("/api/users", userRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/group", groupRoutes);
 app.use("/api/expenses", expenseRoutes);
+app.use("/api/automation",automationRoutes)
 // app.use("/api/notifications", notificationRoutes);
 
 app.use(globalErrorHandler)
