@@ -1,9 +1,9 @@
 import axios from "axios";
 import { store } from "@/store";
 
-const BASE_URL="http://localhost:3000/api";
+// const BASE_URL="http://localhost:3000/api";
 export const api = axios.create({
-    // baseURL: "/api",
+    baseURL: "/api",
     baseURL: BASE_URL,
     withCredentials: true
 });
