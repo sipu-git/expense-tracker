@@ -1,61 +1,18 @@
 // src/pages/Settings/Profile.tsx
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   Camera, Mail, Phone, Calendar,
-  Shield, Bell, CreditCard, TrendingUp,
+  Shield, Bell, CreditCard,
   Edit3, Check, X, Upload, Award,
-  Activity, Target,
   AlertTriangle,
 } from 'lucide-react';
 import { useAppDispatch, useAppSelector } from '@/hooks/redux';
 import { formatDate } from '@/hooks/use-format';
-import { clearError, modifyUserProfile, removeAccount, viewProfile, viewProfilePicture } from '@/store/slices/userSlices/user.slice';
-import { selectMonthExpenses, selectMonthTotal } from '@/store/slices/expensesSlice';
-import { formatCurrency } from '@/utils';
-import { selectBudgetStatus } from '@/store/slices/budgetsSlice';
+import { clearError, modifyUserProfile, removeAccount } from '@/store/slices/userSlices/user.slice';
 import { Link, useNavigate } from 'react-router-dom';
 import { getProfilePicUrl } from '@/utils/profile.util';
 
-// ── Types ─────────────────────────────────────────────────────────────────────
-
-interface EditableField {
-  field: 'full_name' | 'phone' | 'email' | 'bio' | null;
-}
-
-// ── StatCard ──────────────────────────────────────────────────────────────────
-
-function StatCard({
-  icon: Icon,
-  label,
-  value,
-  route,
-  sub,
-  color,
-}: {
-  icon: React.ElementType;
-  label: string;
-  value: string;
-  route?: string;
-  sub: string;
-  color: string;
-}) {
-  const content = (
-    <div className="card flex items-start gap-3 p-4">
-      <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${color}`}>
-        <Icon size={18} className="text-white" />
-      </div>
-      <div className="min-w-0">
-        <p className="text-xs text-muted font-medium uppercase tracking-wide">{label}</p>
-        <p className="text-lg font-bold text-text leading-tight mt-0.5">{value}</p>
-        <p className="text-xs text-muted mt-0.5">{sub}</p>
-      </div>
-    </div>
-  );
-
-  return route ? <Link to={route}>{content}</Link> : content;
-}
-
-// ── EditableRow ───────────────────────────────────────────────────────────────
+type EditableField = 'full_name' | 'phone' | 'email' | null;
 
 function EditableRow({
   icon: Icon,
@@ -79,7 +36,7 @@ function EditableRow({
   onChange: (v: string) => void;
 }) {
   return (
-    <div className="flex items-center gap-3 py-3 group">
+    <div className="flex items-center gap-3 py-3 group border-b border-border/50 dark:border-slate-700 last:border-0">
       <div className="w-8 h-8 rounded-lg bg-hover flex items-center justify-center flex-shrink-0">
         <Icon size={15} className="text-muted" />
       </div>
@@ -128,13 +85,46 @@ function EditableRow({
   );
 }
 
-// ── Badge ─────────────────────────────────────────────────────────────────────
+// ── SecurityRow ───────────────────────────────────────────────────────────────
 
-function Badge({ label, color }: { label: string; color: string }) {
+function SecurityRow({
+  icon: Icon,
+  iconColor,
+  label,
+  isActive = true,
+  sub,
+  subColor,
+  actionLabel,
+  onAction,
+}: {
+  icon: React.ElementType;
+  iconColor: string;
+  label: string;
+  isActive?: boolean;
+  sub: string;
+  subColor?: string;
+  actionLabel: string;
+  onAction: () => void;
+}) {
   return (
-    <span className={`inline-flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-full ${color}`}>
-      {label}
-    </span>
+    <div className="flex items-center justify-between py-3 border-b border-border/50 dark:border-slate-700 last:border-0">
+      <div className="flex items-center gap-3">
+        <div className="w-8 h-8 rounded-lg bg-hover flex items-center justify-center flex-shrink-0">
+          <Icon size={15} className={iconColor} />
+        </div>
+        <div>
+          <p className="text-sm font-medium text-text">{label}</p>
+          <p className={`text-xs ${subColor ?? 'text-muted'}`}>{sub}</p>
+        </div>
+      </div>
+
+      <button
+        onClick={onAction}
+        className={`text-xs font-semibold ${isActive? 'text-violet-500 hover:underline':'text-[#bbbaba]'}`}
+      >
+        {isActive ? actionLabel : <span className='text-slate-400 dark:text-slate-600 cursor-not-allowed'>Unavailable</span>}
+      </button>
+    </div>
   );
 }
 
@@ -142,9 +132,6 @@ function Badge({ label, color }: { label: string; color: string }) {
 
 export default function Profile() {
   const { user, error, loading } = useAppSelector((state) => state.user);
-  const monthExpenses = useAppSelector(selectMonthExpenses);
-  const totalAmount = useAppSelector(selectMonthTotal);
-  const budgetStatus = useAppSelector(selectBudgetStatus);
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
 
@@ -152,9 +139,8 @@ export default function Profile() {
     full_name: user?.full_name ?? '',
     email: user?.email ?? '',
     phone: user?.phone ?? '',
-    profilePic: user?.profilePic ?? null,
+    profilePic: user?.profilePic ?? null as string | null,
     created_at: user?.created_at ?? '',
-    bio: '',
   });
 
   useEffect(() => {
@@ -165,12 +151,11 @@ export default function Profile() {
         phone: user.phone ?? '',
         profilePic: user.profilePic ?? null,
         created_at: user.created_at ?? '',
-        bio: '',
       });
     }
   }, [user]);
 
-  const [editing, setEditing] = useState<EditableField['field']>(null);
+  const [editing, setEditing] = useState<EditableField>(null);
   const [draft, setDraft] = useState('');
   const [saved, setSaved] = useState(false);
   const [fieldError, setFieldError] = useState<string | null>(null);
@@ -186,7 +171,7 @@ export default function Profile() {
 
   // ── Handlers ──────────────────────────────────────────────────────────────
 
-  function startEdit(field: EditableField['field']) {
+  function startEdit(field: EditableField) {
     dispatch(clearError());
     setFieldError(null);
     setEditing(field);
@@ -199,20 +184,14 @@ export default function Profile() {
       return;
     }
 
-    if (editing === 'email') {
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(draft)) {
-        setFieldError('Invalid email address');
-        return;
-      }
+    if (editing === 'email' && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(draft)) {
+      setFieldError('Invalid email address');
+      return;
     }
 
-    if (editing === 'phone') {
-      const phoneRegex = /^[0-9]{10,15}$/;
-      if (!phoneRegex.test(draft)) {
-        setFieldError('Invalid phone number');
-        return;
-      }
+    if (editing === 'phone' && !/^[0-9]{10,15}$/.test(draft)) {
+      setFieldError('Invalid phone number');
+      return;
     }
 
     if (editing === 'full_name' && draft.trim().length < 2) {
@@ -229,7 +208,6 @@ export default function Profile() {
       setEditing(null);
       setFieldError(null);
       flashSaved();
-      // form will auto-sync via the useEffect([user]) above
     }
   }
 
@@ -244,12 +222,10 @@ export default function Profile() {
     formData.append('profilePic', file);
 
     const result = await dispatch(modifyUserProfile(formData));
-
-    if (modifyUserProfile.fulfilled.match(result)) {
-      flashSaved()
-    }
-    else {
+    if (!modifyUserProfile.fulfilled.match(result)) {
       setForm((prev) => ({ ...prev, profilePic: user?.profilePic ?? null }));
+    } else {
+      flashSaved();
     }
   }
 
@@ -269,50 +245,18 @@ export default function Profile() {
     if (deleteConfirmText !== 'Delete my account') return;
     setDropLoading(true);
     const result = await dispatch(removeAccount());
-    if (removeAccount.fulfilled.match(result)) {
-      navigate('/login');
-    }
+    if (removeAccount.fulfilled.match(result)) navigate('/login');
     setDropLoading(false);
   }
-
-  // ── Stats ─────────────────────────────────────────────────────────────────
-
-  const budgetLimits = budgetStatus.filter((a) => a.isNearLimit);
-  const stats = [
-    {
-      icon: Target,
-      label: 'Budgets active',
-      value: `${budgetStatus.length}`,
-      sub: budgetLimits.length > 0 ? `${budgetLimits.length} near limit` : 'All within limit',
-      color: 'bg-violet-500',
-      route: '/budgets',
-    },
-    {
-      icon: Activity,
-      label: 'Transactions',
-      value: formatCurrency(totalAmount),
-      sub: `${monthExpenses.length} Transactions`,
-      color: 'bg-emerald-500',
-      route: '/expenses',
-    },
-    {
-      icon: TrendingUp,
-      label: 'Saved vs last',
-      value: '+12%',
-      sub: 'Month on month',
-      color: 'bg-amber-500',
-    },
-  ];
 
   // ── Render ────────────────────────────────────────────────────────────────
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6 pb-10">
+    <div className="max-w-3xl mx-auto space-y-5 pb-10">
 
       {/* ── Hero card ── */}
       <div className="card overflow-hidden">
-        {/* Banner strip */}
-        <div className="h-10 bg-accent/10 relative">
+        <div className="h-20 bg-accent/10 relative">
           <div
             className="absolute inset-0 opacity-20"
             style={{
@@ -322,22 +266,20 @@ export default function Profile() {
           />
         </div>
 
-        <div className="px-6 pb-2">
-          {/* Avatar row */}
-          <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-4">
+        <div className="px-6 pb-6">
+          <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3 -mt-10 mb-4">
+            {/* Avatar */}
             <div className="relative w-fit">
-              <div className="w-24 h-24 rounded-full bg-accent/20 flex items-center justify-center flex-shrink-0 overflow-hidden">
+              <div className="w-20 h-20 rounded-2xl bg-accent/20 ring-4 ring-card flex items-center justify-center overflow-hidden">
                 {form.profilePic ? (
                   <img
                     src={getProfilePicUrl(form.profilePic) ?? ''}
                     alt="Profile"
                     className="w-full h-full object-cover"
-                    onError={(e) => {
-                      e.currentTarget.style.display = 'none';
-                    }}
+                    onError={(e) => { e.currentTarget.style.display = 'none'; }}
                   />
                 ) : (
-                  <span className="text-2xl font-bold text-accent">{initials}</span>
+                  <span className="text-xl font-bold text-accent">{initials}</span>
                 )}
               </div>
               <button
@@ -360,69 +302,26 @@ export default function Profile() {
               />
             </div>
 
-            <div className="flex items-center gap-2">
-              {saved && <Badge label="✓ Saved" color="bg-emerald-500/10 text-emerald-600" />}
-            </div>
+            {/* Saved badge */}
+            {saved && (
+              <span className="inline-flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-600">
+                ✓ Saved
+              </span>
+            )}
           </div>
 
           {/* Name + email */}
-          <div className="mb-1">
-            <h2 className="text-xl font-bold text-text">{form.full_name}</h2>
-            <p className="text-sm text-muted mt-0.5">{form.email}</p>
-          </div>
-
-          {/* Bio */}
-          {/* <div className="group flex items-start gap-2 mt-3">
-            {editing === 'bio' ? (
-              <div className="flex-1 flex items-start gap-2">
-                <textarea
-                  autoFocus
-                  value={draft}
-                  onChange={(e) => setDraft(e.target.value)}
-                  placeholder="Write a short bio…"
-                  rows={2}
-                  className="flex-1 text-sm text-text bg-hover border border-accent/40 rounded-xl px-3 py-2 outline-none focus:border-accent resize-none transition-colors"
-                />
-                <div className="flex flex-col gap-1 mt-0.5">
-                  <button
-                    onClick={saveEdit}
-                    className="p-1.5 rounded-lg bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20 transition-colors"
-                  >
-                    <Check size={13} />
-                  </button>
-                  <button
-                    onClick={cancelEdit}
-                    className="p-1.5 rounded-lg hover:bg-hover text-muted transition-colors"
-                  >
-                    <X size={13} />
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <button
-                onClick={() => startEdit('bio')}
-                className="p-1.5 rounded-lg opacity-0 group-hover:opacity-100 hover:bg-hover text-muted transition-all flex-shrink-0"
-              >
-                <Edit3 size={13} />
-              </button>
-            )}
-          </div> */}
+          <h2 className="text-xl font-bold text-text">{form.full_name}</h2>
+          <p className="text-sm text-muted mt-0.5">{form.email}</p>
         </div>
       </div>
 
-      {/* ── Stats row ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
-        {stats.map((s) => (
-          <StatCard key={s.label} {...s} />
-        ))}
-      </div>
-
       {/* ── Details + Security ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
 
         {/* Personal details */}
         <div className="card">
-          <div className="flex items-center justify-between mb-1">
+          <div className="flex items-center justify-between mb-4">
             <div>
               <h3 className="font-bold text-text">Personal details</h3>
               <p className="text-xs text-muted mt-0.5">Hover a row to edit</p>
@@ -437,55 +336,51 @@ export default function Profile() {
               role="alert"
               className="flex items-start gap-2 rounded-xl bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900/60 px-3 py-2.5 mb-3"
             >
-              <span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-red-100 text-red-600 text-[10px] font-bold shrink-0 mt-0.5">
-                !
-              </span>
+              <span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-red-100 text-red-600 text-[10px] font-bold shrink-0 mt-0.5">!</span>
               <p className="text-xs text-red-700 dark:text-red-300">{fieldError ?? error}</p>
             </div>
           )}
 
-          <div>
-            <EditableRow
-              icon={Edit3}
-              label="Full name"
-              value={editing === 'full_name' ? draft : form.full_name}
-              placeholder="Your full name"
-              isEditing={editing === 'full_name'}
-              onEdit={() => startEdit('full_name')}
-              onSave={saveEdit}
-              onCancel={cancelEdit}
-              onChange={setDraft}
-            />
-            <EditableRow
-              icon={Mail}
-              label="Email address"
-              value={editing === 'email' ? draft : form.email}
-              placeholder="you@example.com"
-              isEditing={editing === 'email'}
-              onEdit={() => startEdit('email')}
-              onSave={saveEdit}
-              onCancel={cancelEdit}
-              onChange={setDraft}
-            />
-            <EditableRow
-              icon={Phone}
-              label="Phone number"
-              value={editing === 'phone' ? draft : form.phone}
-              placeholder="+1 (555) 000-0000"
-              isEditing={editing === 'phone'}
-              onEdit={() => startEdit('phone')}
-              onSave={saveEdit}
-              onCancel={cancelEdit}
-              onChange={setDraft}
-            />
-            <div className="flex items-center gap-3 py-3">
-              <div className="w-8 h-8 rounded-lg bg-hover flex items-center justify-center flex-shrink-0">
-                <Calendar size={15} className="text-muted" />
-              </div>
-              <div>
-                <p className="text-xs text-muted font-medium mb-0.5">Member since</p>
-                <p className="text-sm text-text">{formatDate(form.created_at)}</p>
-              </div>
+          <EditableRow
+            icon={Edit3}
+            label="Full name"
+            value={editing === 'full_name' ? draft : form.full_name}
+            placeholder="Your full name"
+            isEditing={editing === 'full_name'}
+            onEdit={() => startEdit('full_name')}
+            onSave={saveEdit}
+            onCancel={cancelEdit}
+            onChange={setDraft}
+          />
+          <EditableRow
+            icon={Mail}
+            label="Email address"
+            value={editing === 'email' ? draft : form.email}
+            placeholder="you@example.com"
+            isEditing={editing === 'email'}
+            onEdit={() => startEdit('email')}
+            onSave={saveEdit}
+            onCancel={cancelEdit}
+            onChange={setDraft}
+          />
+          <EditableRow
+            icon={Phone}
+            label="Phone number"
+            value={editing === 'phone' ? draft : form.phone}
+            placeholder="+1 (555) 000-0000"
+            isEditing={editing === 'phone'}
+            onEdit={() => startEdit('phone')}
+            onSave={saveEdit}
+            onCancel={cancelEdit}
+            onChange={setDraft}
+          />
+          <div className="flex items-center gap-3 py-3">
+            <div className="w-8 h-8 rounded-lg bg-hover flex items-center justify-center flex-shrink-0">
+              <Calendar size={15} className="text-muted" />
+            </div>
+            <div>
+              <p className="text-xs text-muted font-medium mb-0.5">Member since</p>
+              <p className="text-sm text-text">{formatDate(form.created_at)}</p>
             </div>
           </div>
         </div>
@@ -495,70 +390,43 @@ export default function Profile() {
           <h3 className="font-bold text-text mb-1">Security & account</h3>
           <p className="text-xs text-muted mb-4">Keep your account safe</p>
 
-          <div className="space-y-3">
-            <div className="flex items-center justify-between p-3 rounded-xl bg-hover">
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-lg bg-card flex items-center justify-center">
-                  <Shield size={15} className="text-accent" />
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-text">Password</p>
-                  <p className="text-xs text-muted">Last changed 3 months ago</p>
-                </div>
-              </div>
-              <button
-                onClick={() => navigate('/send-otp')}
-                className="text-xs font-semibold text-accent hover:underline"
-              >
-                Change
-              </button>
-            </div>
-
-            <div className="flex items-center justify-between p-3 rounded-xl bg-hover">
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-lg bg-card flex items-center justify-center">
-                  <Award size={15} className="text-emerald-500" />
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-text">Two-factor auth</p>
-                  <p className="text-xs text-emerald-500 font-medium">Enabled</p>
-                </div>
-              </div>
-              <button className="text-xs font-semibold text-muted hover:text-text transition-colors">
-                Manage
-              </button>
-            </div>
-
-            <div className="flex items-center justify-between p-3 rounded-xl bg-hover">
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-lg bg-card flex items-center justify-center">
-                  <Bell size={15} className="text-amber-500" />
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-text">Notifications</p>
-                  <p className="text-xs text-muted">Email & push enabled</p>
-                </div>
-              </div>
-              <button className="text-xs font-semibold text-accent hover:underline">
-                Configure
-              </button>
-            </div>
-
-            <div className="flex items-center justify-between p-3 rounded-xl bg-hover">
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-lg bg-card flex items-center justify-center">
-                  <CreditCard size={15} className="text-violet-500" />
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-text">Billing</p>
-                  <p className="text-xs text-muted">Pro · renews Jul 2025</p>
-                </div>
-              </div>
-              <button className="text-xs font-semibold text-accent hover:underline">
-                Manage
-              </button>
-            </div>
-          </div>
+          <SecurityRow
+            icon={Shield}
+            iconColor="text-accent"
+            label="Password"
+            isActive
+            sub="Last changed 3 months ago"
+            actionLabel="Change"
+            onAction={() => navigate('/send-otp')}
+          />
+          <SecurityRow
+            icon={Award}
+            iconColor="text-emerald-500"
+            label="Two-factor auth"
+            isActive={false}
+            sub="Unavailable at this moment"
+            subColor="text-slate-500 font-medium"
+            actionLabel="Unavailable"
+            onAction={() => { }}
+          />
+          <SecurityRow
+            icon={Bell}
+            iconColor="text-amber-500"
+            label="Notifications"
+            isActive={false}
+            sub="Email & push enabled"
+            actionLabel="Unavailable"
+            onAction={() => { }}
+          />
+          <SecurityRow
+            icon={CreditCard}
+            iconColor="text-violet-500"
+            label="Billing"
+            isActive={false}
+            sub="Pro · renews Jul 2025"
+            actionLabel="Unavailable"
+            onAction={() => { }}
+          />
         </div>
       </div>
 
@@ -585,7 +453,6 @@ export default function Profile() {
       {displayConfirmBox && (
         <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
           <div className="bg-card w-full max-w-md rounded-2xl border border-border overflow-hidden shadow-xl">
-            {/* Header */}
             <div className="bg-red-50 dark:bg-red-950/40 px-6 py-4 border-b border-red-200 dark:border-red-900/50 flex items-start gap-3">
               <div className="w-9 h-9 rounded-full bg-red-200 dark:bg-red-900 flex items-center justify-center flex-shrink-0 mt-0.5">
                 <AlertTriangle size={18} className="text-red-700 dark:text-red-300" />
@@ -598,7 +465,6 @@ export default function Profile() {
               </div>
             </div>
 
-            {/* Body */}
             <div className="px-6 py-5">
               <p className="text-xs text-muted mb-4 leading-relaxed">
                 Before you proceed, please read and acknowledge the following:
@@ -606,22 +472,10 @@ export default function Profile() {
 
               <ul className="space-y-2 mb-5">
                 {[
-                  {
-                    label: 'All data will be erased.',
-                    detail: 'Transactions, budgets, categories, and settings are permanently deleted.',
-                  },
-                  {
-                    label: 'No recovery possible.',
-                    detail: 'Your account cannot be restored once deleted.',
-                  },
-                  {
-                    label: 'Active subscriptions cancelled.',
-                    detail: 'Pro plan billing is cancelled immediately. Refunds follow our refund policy.',
-                  },
-                  {
-                    label: 'Shared data removed.',
-                    detail: 'Any reports shared with other users will become inaccessible.',
-                  },
+                  { label: 'All data will be erased.', detail: 'Transactions, budgets, categories, and settings are permanently deleted.' },
+                  { label: 'No recovery possible.', detail: 'Your account cannot be restored once deleted.' },
+                  { label: 'Active subscriptions cancelled.', detail: 'Pro plan billing is cancelled immediately. Refunds follow our refund policy.' },
+                  { label: 'Shared data removed.', detail: 'Any reports shared with other users will become inaccessible.' },
                 ].map(({ label, detail }) => (
                   <li key={label} className="flex items-start gap-2.5 text-xs bg-hover rounded-xl p-3">
                     <X size={13} className="text-red-500 flex-shrink-0 mt-0.5" />
@@ -632,7 +486,6 @@ export default function Profile() {
                 ))}
               </ul>
 
-              {/* Confirm input */}
               <div className="mb-5">
                 <label className="block text-xs text-muted mb-1.5">
                   Type{' '}
@@ -650,13 +503,9 @@ export default function Profile() {
                 />
               </div>
 
-              {/* Actions */}
               <div className="flex gap-3">
                 <button
-                  onClick={() => {
-                    setDisplayConfirmBox(false);
-                    setDeleteConfirmText('');
-                  }}
+                  onClick={() => { setDisplayConfirmBox(false); setDeleteConfirmText(''); }}
                   className="flex-1 px-4 py-2.5 rounded-xl text-sm font-medium border border-border text-text hover:bg-hover transition-colors"
                 >
                   Cancel
@@ -669,9 +518,7 @@ export default function Profile() {
                   {dropLoading ? (
                     <span className="w-4 h-4 rounded-full border-2 border-white/30 border-t-white animate-spin" />
                   ) : (
-                    <>
-                      <X size={14} /> Delete my account
-                    </>
+                    <><X size={14} /> Delete my account</>
                   )}
                 </button>
               </div>
