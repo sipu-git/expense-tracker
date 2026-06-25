@@ -9,6 +9,7 @@ model User {
   updated_at DateTime       @updatedAt
   role       GroupRole?      @default(MEMBER)
   expenses   Expenses[]
+  budgets    Budgets[]
   groups     Group[]
   sender     GroupInvite[]  @relation("InviteSender")
   receiver   GroupInvite[]  @relation("InviteReceiver")

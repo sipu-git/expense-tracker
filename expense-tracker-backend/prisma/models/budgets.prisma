@@ -1,0 +1,18 @@
+enum BudgetPeriod {
+  MONTHLY
+  WEEKLY
+}
+
+model Budgets {
+  id          String       @id @default(uuid())
+  type        ExpenseType
+  limitAmount Decimal
+  period      BudgetPeriod @default(MONTHLY)
+  created_by  String
+  created_at  DateTime     @default(now())
+  updated_at  DateTime     @updatedAt
+  creator     User         @relation(fields: [created_by], references: [id], onDelete: Cascade)
+
+  @@unique([created_by, type])
+  @@index([created_by])
+}
