@@ -31,7 +31,7 @@ export default function Budgets() {
   const error = useAppSelector(selectBudgetsError);
   const activeAccountId = useAppSelector(selectActiveAccountId);
   const [showForm, setShowForm] = useState(false);
-  const [chartType, setChartType] = useState<'stacked' | 'grouped'>('stacked');
+  // const [chartType, setChartType] = useState<'stacked' | 'grouped'>('stacked');
   const [form, setForm] = useState<{ category: ExpenseTypes; limit: string }>({
     category: 'FOOD',
     limit: '',
@@ -173,17 +173,17 @@ export default function Budgets() {
         )}
 
         {/* Main Layout - Chart and Cards Side by Side */}
-        <div className="flex gap-4 h-[calc(100vh-280px)]">
+        <div className="w-full flex lg:flex-row flex-col gap-4 lg:h-[calc(100vh-150px)] min-h-screen">
           {/* Left Side - Chart Section */}
           {!loading && budgetStatus.length > 0 && (
-            <div className="flex-1 card overflow-hidden flex flex-col">
+            <div className="lg:w-2/3 w-full card overflow-hidden flex flex-col">
               {/* Header with Controls */}
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6 pb-4 border-b border-border">
                 <div className="flex-1">
                   <h3 className="font-bold text-text text-base">Budget Overview</h3>
                   <p className="text-xs text-muted mt-1">Spent vs remaining across all categories</p>
                 </div>
-                <div className="flex gap-2 shrink-0">
+                {/* <div className="flex gap-2 shrink-0">
                   <button
                     onClick={() => setChartType('stacked')}
                     className={cn(
@@ -206,7 +206,7 @@ export default function Budgets() {
                   >
                     Grouped
                   </button>
-                </div>
+                </div> */}
               </div>
 
               {/* Chart Container */}
@@ -234,7 +234,7 @@ export default function Budgets() {
                       tick={{ fill: 'var(--text-muted, #6b7280)', fontSize: 12 }}
                       axisLine={false}
                       tickLine={false}
-                      width={50}
+                      width={60}
                     />
                     <Tooltip
                       content={<CustomTooltip />}
@@ -248,7 +248,6 @@ export default function Budgets() {
                       formatter={(value) => <span style={{ fontSize: '13px', fontWeight: 500, color: '#6b7280' }}>{value}</span>}
                     />
 
-                    {chartType === 'stacked' ? (
                       <>
                         <Bar
                           dataKey="spent"
@@ -267,24 +266,7 @@ export default function Budgets() {
                           barSize={48}
                         />
                       </>
-                    ) : (
-                      <>
-                        <Bar
-                          dataKey="spent"
-                          fill="#ef4444"
-                          radius={[8, 8, 0, 0]}
-                          name="Spent"
-                          barSize={32}
-                        />
-                        <Bar
-                          dataKey="remaining"
-                          fill="#10b981"
-                          radius={[8, 8, 0, 0]}
-                          name="Remaining"
-                          barSize={32}
-                        />
-                      </>
-                    )}
+                    
                   </BarChart>
                 </ResponsiveContainer>
               </div>
@@ -314,7 +296,7 @@ export default function Budgets() {
           )}
 
           {/* Right Side - Budget Cards with Scrollable Container */}
-          <div className="flex-1 flex flex-col overflow-hidden">
+          <div className="lg:w-1/3 w-full flex flex-col overflow-hidden">
             {loading && budgetStatus.length === 0 ? (
               <div className="card text-center py-16 h-full flex items-center justify-center">
                 <p className="text-base font-semibold text-text">Loading budgets...</p>
