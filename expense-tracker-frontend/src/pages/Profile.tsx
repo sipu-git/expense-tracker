@@ -11,6 +11,7 @@ import { formatDate } from '@/hooks/use-format';
 import { clearError, modifyUserProfile, removeAccount } from '@/store/slices/userSlices/user.slice';
 import { Link, useNavigate } from 'react-router-dom';
 import { getProfilePicUrl } from '@/utils/profile.util';
+import { differenceInDays } from 'date-fns';
 
 type EditableField = 'full_name' | 'phone' | 'email' | null;
 
@@ -120,7 +121,7 @@ function SecurityRow({
 
       <button
         onClick={onAction}
-        className={`text-xs font-semibold ${isActive? 'text-violet-500 hover:underline':'text-[#bbbaba]'}`}
+        className={`text-xs font-semibold ${isActive ? 'text-violet-500 hover:underline' : 'text-[#bbbaba]'}`}
       >
         {isActive ? actionLabel : <span className='text-slate-400 dark:text-slate-600 cursor-not-allowed'>Unavailable</span>}
       </button>
@@ -249,7 +250,12 @@ export default function Profile() {
     setDropLoading(false);
   }
 
-  // ── Render ────────────────────────────────────────────────────────────────
+  const viewPasswordUpdateDay = user?.updated_at ? differenceInDays(new Date(), new Date(user.updated_at)) : null;
+
+  const passwordUpdatedLabel = viewPasswordUpdateDay === null ? 'Not updated yet'
+    : viewPasswordUpdateDay === 0 ? 'Updated today'
+      : viewPasswordUpdateDay === 1 ? 'Updated 1 day ago'
+        : `Updated ${viewPasswordUpdateDay} days ago`;
 
   return (
     <div className="max-w-3xl mx-auto space-y-5 pb-10">
@@ -395,7 +401,7 @@ export default function Profile() {
             iconColor="text-accent"
             label="Password"
             isActive
-            sub="Last changed 3 months ago"
+            sub={passwordUpdatedLabel}
             actionLabel="Change"
             onAction={() => navigate('/send-otp')}
           />

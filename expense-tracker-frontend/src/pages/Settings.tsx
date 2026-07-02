@@ -1,5 +1,5 @@
 // src/components/dashboard/Settings.tsx
-import React from 'react';
+import React, { useState } from 'react';
 import { Sun, Moon, Trash2, Download, RefreshCw, User } from 'lucide-react';
 import { useAppSelector, useAppDispatch } from '../hooks/redux';
 import { selectTheme, setTheme } from '../store/slices/uiSlice';
@@ -10,12 +10,17 @@ import { cn } from '../utils';
 import { useNavigate } from 'react-router-dom';
 import { removeAll } from '@/store/slices/expensesSlice';
 import { getProfilePicUrl } from '@/utils/profile.util';
+import { Expense } from '@/types/expense.type';
+import DeleteExpenseModal from '@/components/expense/ExpenseDeleteModal';
+import ClearAllExpensesModal from '@/components/expense/ExpenseDeleteModal';
 
 export default function Settings() {
   const dispatch = useAppDispatch();
   const theme = useAppSelector(selectTheme);
   const expense = useAppSelector(selectFilteredExpenses);
   const navigate = useNavigate()
+  const [removeAllExpenses, setRemoveAllExpenses] = useState(false)
+  const [deleteLoading, setDeleteLoading] = useState(false)
   const { user } = useAppSelector((state) => state.user)
   const { loading: expenseLoading } = useAppSelector((state) => state.expense)
 
@@ -32,6 +37,17 @@ export default function Settings() {
       `expenses-${format(new Date(), 'yyyy-MM-dd')}.csv`
     );
   };
+
+  const handleDeleteConfirmBox = async () => {
+    setDeleteLoading(true);
+    try {
+      await dispatch(removeAll()).unwrap();
+      setRemoveAllExpenses(false);
+    } catch (err) {
+      setDeleteLoading(false)
+    }
+  }
+
   const initials = user?.full_name
     ? user.full_name.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2)
     : 'U';
@@ -143,15 +159,18 @@ export default function Settings() {
             </div>
             <button
               disabled={expenseLoading}
-              onClick={async () => {
-                if (confirm('Are you sure? This will delete all your expenses.')) {
-                  await dispatch(removeAll());
-                }
-              }}
+              onClick={() => setRemoveAllExpenses(true)}
               className="text-xs font-semibold text-red-600 hover:underline disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {expenseLoading ? 'Deleting...' : 'Delete All'}
             </button>
+            <ClearAllExpensesModal
+              isOpen={removeAllExpenses}
+              count={expense.length}
+              loading={deleteLoading}
+              onClose={() => setRemoveAllExpenses(false)}
+              onConfirm={handleDeleteConfirmBox}
+            />
           </div>
         </div>
       </div>
