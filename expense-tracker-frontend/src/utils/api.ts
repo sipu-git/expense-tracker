@@ -1,10 +1,8 @@
 import axios from "axios";
 import { store } from "@/store";
 
-const BASE_URL="http://localhost:3000/api";
 export const api = axios.create({
-    // baseURL: "/api",
-    baseURL: BASE_URL,
+     baseURL: "/api",
     withCredentials: true
 });
 
