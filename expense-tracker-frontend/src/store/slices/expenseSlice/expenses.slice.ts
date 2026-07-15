@@ -3,8 +3,9 @@ import { Expense, ExpenseStates } from "@/types/expense.type";
 import { handleApiError } from "@/utils/apiError";
 // import { setActiveApiAccountId } from "@/utils/api";
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
-import type { RootState } from "@/store";
 import { switchAccount } from "../accountSlices/account.slice";
+
+const SUGGEST_CATEGORY = "https://expense-tracker-1-6m9p.onrender.com/api/automation/suggest-category"; 
 
 const initialStates: ExpenseStates = {
     expenses: [],
@@ -21,7 +22,7 @@ export const suggestExpenseCategory = createAsyncThunk(
     "expense/suggestCategory",
     async ({ name, amount }: { name: string; amount: number }, { rejectWithValue }) => {
         try {
-            const res = await fetch("/api/automation/suggest-category", {
+            const res = await fetch(SUGGEST_CATEGORY, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 credentials: "include",
