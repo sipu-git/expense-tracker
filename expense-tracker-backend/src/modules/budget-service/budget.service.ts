@@ -102,7 +102,7 @@ export async function deleteBudget(budgetId: string, userId: string) {
         where: { id: budgetId },
     });
 
-    await clearBudgetCache(userId);
+    await  clearBudgetCache(userId);
     return formatBudget(deletedBudget);
 }
 
