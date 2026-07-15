@@ -97,12 +97,10 @@ export async function modifyProfile(userId: string,
             updatedata.profilePic = newKey ?? undefined;
         }
         if (payload.full_name) {
-            if (payload.full_name) {
-                if (payload.full_name.trim().length < 2) {
-                    throw new AppError("Full name must be at least 2 characters", 400);
-                }
-                updatedata.full_name = payload.full_name.trim();
+            if (payload.full_name.trim().length < 2) {
+                throw new AppError("Full name must be at least 2 characters", 400);
             }
+            updatedata.full_name = payload.full_name.trim();
         }
         if (payload.email) {
             const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -161,7 +159,10 @@ export async function modifyProfile(userId: string,
         });
         await redisService.delete(`profile:${user.id}`);
         return updatedUser;
-    })
+    }, {
+        maxWait: 10000,
+        timeout: 20000,
+    });
 }
 
 export async function dropProfile(userId: string) {
