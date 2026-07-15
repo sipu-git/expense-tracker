@@ -145,7 +145,7 @@ export async function modifyProfile(userId: string,
         if (Object.keys(updatedata).length === 0) {
             throw new AppError("No valid fields provided to update", 400);
         }
-        const updatedUser = await prisma.user.update({
+        const infos = await prisma.user.update({
             where: { id: user.id },
             data: updatedata,
             select: {
@@ -158,7 +158,7 @@ export async function modifyProfile(userId: string,
             }
         });
         await redisService.delete(`profile:${user.id}`);
-        return updatedUser;
+        return infos;
     }, {
         maxWait: 10000,
         timeout: 20000,
