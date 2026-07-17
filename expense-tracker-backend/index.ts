@@ -22,6 +22,10 @@ app.use(
     })
 ); app.use(cookiesParser());
 
+app.get("/health", (req, res) => {
+    res.status(200).send("ok");
+});
+
 app.use("/api", (req, res, next) => {
     res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");
     res.setHeader("Pragma", "no-cache");
@@ -33,7 +37,6 @@ app.use("/api/group", groupRoutes);
 app.use("/api/expenses", expenseRoutes);
 app.use("/api/budgets", budgetRoutes);
 app.use("/api/automation",automationRoutes)
-// app.use("/api/notifications", notificationRoutes);
 
 app.use(globalErrorHandler)
 
