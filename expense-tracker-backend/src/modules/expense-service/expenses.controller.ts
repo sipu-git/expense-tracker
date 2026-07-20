@@ -1,8 +1,19 @@
 import { Request, Response } from "express";
 import { createExpenseSchema, expenseFilterSchema, UpdateExpenseInputs } from "./expenses.validation.js";
-import { createExpenses, deleteExpense, getExpensesByFilter, removeAllExpenses, updateExpenses, viewAllExpenses, ViewExpenseById } from "./expense.service.js";
+import { createExpenses, deleteExpense, extractReceiptFormExpense, getExpensesByFilter, removeAllExpenses, updateExpenses, viewAllExpenses, ViewExpenseById } from "./expense.service.js";
 import { errorResponse, successResponse } from "../../shared/util/ApiResponses.js";
+import { AppError } from "../../../lib/AppError.js";
 
+export async function extractReceiptController(req: Request, res: Response) {
+    if (!req.file) {
+        throw new AppError("No file uploaded", 400);
+    }
+    if (!req.user?.id) {
+        throw new AppError("Unauthorized", 401);
+    }
+    const result = await extractReceiptFormExpense(req.user?.id, req.file);
+    return res.status(200).json({ success: true, ...result });
+}
 export const addExpense = async (req: Request, res: Response) => {
     const userId = req.user?.id;
     const parsedInfos = await createExpenseSchema.safeParse(req.body)

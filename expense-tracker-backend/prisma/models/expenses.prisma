@@ -6,6 +6,7 @@ model Expenses {
   bought_at  DateTime
   type       ExpenseType
   created_by String
+  receiptKey String?
   groupId    String?
   created_at DateTime    @default(now())
   updated_at DateTime    @updatedAt

@@ -1,6 +1,6 @@
 import { AppError } from "../../../lib/AppError.js";
 import { prisma } from "../../../lib/prisma.js";
-import { removeProfileImage, uploadProfileImage } from "../../aws/bucket.service.js";
+import { removeProfileImage, uploadProfileImage } from "../../shared/repository/profile.repo.js";
 import { CreateUserInput, ModifyUserInput } from "./user.validation.js";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";

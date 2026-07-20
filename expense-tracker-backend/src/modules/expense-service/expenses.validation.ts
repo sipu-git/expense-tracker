@@ -15,6 +15,7 @@ export const createExpenseSchema = z.object({
         .max(50, "Quantity cannot exceed 50 characters").optional(),
     bought_at: z.string().datetime("Invalid date format"),
     groupId: z.string().uuid("Invalid group id").optional(),
+    receiptKey:z.string().optional()
 })
 
 

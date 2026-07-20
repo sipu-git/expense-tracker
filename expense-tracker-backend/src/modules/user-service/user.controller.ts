@@ -2,7 +2,7 @@ import { Request, Response } from "express";
 import { createUser, dropProfile, getUserById, loginUser, modifyProfile, signedOutuser } from "./user.service.js";
 import { errorResponse, successResponse } from "../../shared/util/ApiResponses.js";
 import { modifyUserSchema } from "./user.validation.js";
-import { getProfileImageUrl } from "../../aws/bucket.service.js";
+import { getProfileImageUrl } from "../../shared/repository/profile.repo.js";
 
 export const registerUser = async (req: Request, res: Response) => {
         const { full_name, email, phone, password } = req.body;

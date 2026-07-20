@@ -5,7 +5,28 @@ import { cacheQuery } from "../../shared/redis/cacheQuery.js";
 import { ExpenseFilter, getExpenseDateRange } from "../../shared/util/expenses.util.js";
 import { CreateExpenseInputs, UpdateExpenseInputs } from "./expenses.validation.js";
 import redisService from '../../shared/redis/services/db-caching.service.js';
-import { categorizeExpense } from "../automation-services/categorize-expenses.service.js";
+import { categorizeExpense } from "../automation-services/services/categorize-expenses.service.js";
+import { deleteReceiptObeject, uploadReceiptFile } from "../../shared/repository/receipt.repo.js";
+import { extractReceiptData } from "../automation-services/services/receiptExtraction.service.js";
+
+export async function extractReceiptFormExpense(userId: string, file: Express.Multer.File) {
+    const [uploadResult, extractResult] = await Promise.allSettled([
+        uploadReceiptFile(file, userId),
+        extractReceiptData(file.buffer, file.mimetype)
+    ])
+    if (uploadResult.status == "rejected") {
+        throw new AppError("Failed to upload the receipt file", 500)
+    }
+    const receipt = uploadResult.value;
+    const extractedData = extractResult.status === "fulfilled" ? extractResult.value : null;
+
+    return {
+        receiptKey: receipt.fileKey,
+        receiptUrl: receipt.fileUrl,
+        extractedData,
+        extractionFailed: extractResult.status === "rejected",
+    };
+}
 
 export async function createExpenses(data: CreateExpenseInputs, userId: string) {
     const exactData = new Date(data.bought_at)
@@ -37,7 +58,8 @@ export async function createExpenses(data: CreateExpenseInputs, userId: string) 
                 quantity: data.quantity ?? null,
                 bought_at: new Date(data.bought_at),
                 created_by: userId,
-                groupId: data.groupId
+                groupId: data.groupId,
+                receiptKey: data.receiptKey ?? null
             }
         })
         await Promise.all([
@@ -204,6 +226,10 @@ export async function deleteExpense(expenseId: string, userId: string) {
             if (!canDelete) {
                 throw new AppError("You don't have permission to delete this expense");
             }
+
+        }
+        if (expense.receipt_key) {
+            await deleteReceiptObeject(expense.receipt_key);
         }
         const deletedExpense = await tx.expenses.delete({
             where: {
@@ -221,26 +247,31 @@ export async function deleteExpense(expenseId: string, userId: string) {
 
 
 export async function removeAllExpenses(userId: string) {
-    return await prisma.$transaction(async (tx) => {
-        const findUser = await tx.user.findUnique({
-            where: {
-                id: userId
-            }
+    const dropAll = await prisma.$transaction(async (tx) => {
+        const findUser = await tx.user.findUnique({ where: { id: userId } })
+        if (!findUser) throw new AppError("User doesn't exist!")
+
+        const expensesWithReceipts = await tx.expenses.findMany({
+            where: { created_by: userId, receiptKey: { not: null } },
+            select: { receiptKey: true }
         })
-        if (!findUser) {
-            throw new AppError("User doesn't exist!")
-        }
-        const dropAll = await tx.expenses.deleteMany({
-            where: {
-                created_by: userId
-            }
-        })
-        await Promise.all([
-            redisService.delete(`expenses:${userId}:all`),
-            redisService.deleteByPattern(`expenses:${userId}:filters:*`),
-        ])
-        return dropAll;
+
+        const deleted = await tx.expenses.deleteMany({ where: { created_by: userId } })
+        return { deleted, receiptKeys: expensesWithReceipts.map((e: any) => e.receipt_key) }
     })
+
+    // Clean up S3 after transaction commits
+    await Promise.all(
+        dropAll.receiptKeys.map((key: string) =>
+            deleteReceiptObeject(key).catch((err) =>
+                console.error(`Failed to delete S3 receipt ${key}:`, err)))
+    )
+
+    await Promise.all([
+        redisService.delete(`expenses:${userId}:all`),
+        redisService.deleteByPattern(`expenses:${userId}:filters:*`),
+    ])
+    return dropAll.deleted;
 }
 
 export async function getExpensesByFilter(userId: string, filters: ExpenseFilter, groupId?: string) {
