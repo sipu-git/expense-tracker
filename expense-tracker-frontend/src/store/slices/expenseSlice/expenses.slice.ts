@@ -5,7 +5,8 @@ import { handleApiError } from "@/utils/apiError";
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import { switchAccount } from "../accountSlices/account.slice";
 
-const SUGGEST_CATEGORY = "https://expense-tracker-1-6m9p.onrender.com/api/automation/suggest-category"; 
+// const SUGGEST_CATEGORY = "https://expense-tracker-1-6m9p.onrender.com/api/automation/suggest-category"; 
+const SUGGEST_CATEGORY = "http://localhost:3000/api/automation/suggest-category";
 
 const initialStates: ExpenseStates = {
     expenses: [],
@@ -14,6 +15,14 @@ const initialStates: ExpenseStates = {
     suggestCategory: null,
     categoryLoading: false,
     loading: false,
+    receiptExtraction: {
+        loading: false,
+        error: null,
+        extractedData: null,
+        receiptKey: null,
+        receiptUrl: null,
+        extractionFailed: false
+    },
     error: null,
     success: false,
 };
@@ -36,6 +45,17 @@ export const suggestExpenseCategory = createAsyncThunk(
     }
 );
 
+export const extractReceipt = createAsyncThunk(
+    "expenses/extractReceipt",
+    async (file: File, { rejectWithValue }) => {
+        try {
+            const response = await expenseApis.extractReceipt(file);
+            return { data: response.data };
+        } catch (error) {
+            return rejectWithValue(handleApiError(error));
+        }
+    }
+);
 export const addExpense = createAsyncThunk(
     "expenses/add",
     async (data: Partial<Expense>, { rejectWithValue, getState }) => {
@@ -153,6 +173,12 @@ export const expenseSlice = createSlice({
         clearExpenseDetail: (state) => {
             state.expenseDetail = null;
         },
+        clearReceiptExtraction: (state) => {
+            state.receiptExtraction.loading = false;
+            state.receiptExtraction.error = null;
+            state.receiptExtraction.extractedData = null;
+            state.receiptExtraction.receiptKey = null;
+        }
     },
     extraReducers: (builder) => {
         builder
@@ -169,6 +195,24 @@ export const expenseSlice = createSlice({
                 state.suggestCategory = null;   // silent fail — user picks manually
             });
 
+        builder
+            .addCase(extractReceipt.pending, (state) => {
+                state.receiptExtraction.loading = true;
+                state.receiptExtraction.error = null;
+                state.receiptExtraction.extractedData = null;
+            })
+            .addCase(extractReceipt.fulfilled, (state, action) => {
+                state.receiptExtraction.loading = false;
+                state.receiptExtraction.extractedData = action.payload.data.extractedData;
+                state.receiptExtraction.receiptKey = action.payload.data.receiptKey;
+                state.receiptExtraction.receiptUrl = action.payload.data.receiptUrl;
+                state.receiptExtraction.extractionFailed = action.payload.data.extractionFailed;
+            })
+            .addCase(extractReceipt.rejected, (state, action) => {
+                state.receiptExtraction.loading = false;
+                state.receiptExtraction.error = action.payload as string;
+                state.receiptExtraction.extractedData = null;
+            });
         builder
             .addCase(switchAccount, (state, action) => {
                 state.expenses = [];
@@ -326,5 +370,5 @@ export const expenseSlice = createSlice({
 });
 
 export const { clearError, clearSuccess,
-    resetExpenseState, clearSuggestion, clearExpenseDetail } = expenseSlice.actions;
+    resetExpenseState, clearSuggestion, clearExpenseDetail, clearReceiptExtraction } = expenseSlice.actions;
 export default expenseSlice.reducer;

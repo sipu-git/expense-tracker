@@ -1,14 +1,18 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   Wallet, BarChart3, Bell, Users, DollarSign, Hash, Calendar, Tag,
   Loader2, CheckCircle2, ChevronRight, Lock, FileText, Zap, ShieldCheck, ArrowLeft,
+  AlertTriangle,
+  Upload,
+  ScanLine,
+  X,
 } from 'lucide-react';
 import { Expense, ExpenseTypes } from '@/types/expense.type';
 import { format } from 'date-fns';
 import { cn } from '@/utils';
 import { useNavigate } from 'react-router-dom';
 import { useAppDispatch, useAppSelector } from '@/hooks/redux';
-import { addExpense, clearSuggestion, suggestExpenseCategory } from '@/store/slices/expenseSlice/expenses.slice';
+import { addExpense, clearReceiptExtraction, clearSuggestion, extractReceipt, suggestExpenseCategory } from '@/store/slices/expenseSlice/expenses.slice';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -102,6 +106,7 @@ type FormState = {
   quantity?: string;
   bought_at: string;
   groupId: string;
+  receiptKey?: string | null;
 };
 
 const EMPTY: FormState = {
@@ -111,6 +116,7 @@ const EMPTY: FormState = {
   quantity: '1',
   bought_at: format(new Date(), 'yyyy-MM-dd'),
   groupId: '',
+  receiptKey: ''
 };
 
 // ─── Shared primitives ────────────────────────────────────────────────────────
@@ -349,7 +355,7 @@ function LeftPanel() {
 
 function ExpenseForm() {
   const dispatch = useAppDispatch();
-  const { loading, error: storeError, suggestCategory, categoryLoading } = useAppSelector((s) => s.expense);
+  const { loading, error: storeError, suggestCategory, categoryLoading, receiptExtraction } = useAppSelector((s) => s.expense);
   const navigate = useNavigate();
   const [form, setForm] = useState<FormState>(EMPTY);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -357,6 +363,55 @@ function ExpenseForm() {
   const [aiSuggested, setAiSuggested] = useState(false);
   const [manualType, setManualType] = useState(false);
   const [aiPending, setAiPending] = useState(false);
+
+  const [entryMode, setEntryMode] = useState<'manual' | 'auto'>('manual');
+  const [receiptFile, setReceiptFile] = useState<File | null>(null);
+  const [receiptKey, setReceiptKey] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+
+  const handleReceiptSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setReceiptFile(file);
+    const result = await dispatch(extractReceipt(file));
+
+    if (extractReceipt.fulfilled.match(result)) {
+      const { extractedData, receiptKey: key, extractionFailed } = result.payload.data;
+      setReceiptKey(key);
+
+      if (extractedData) {
+        setForm((f) => ({
+          ...f,
+          name: extractedData.name ?? f.name,
+          amount: extractedData.amount ?? f.amount,
+          quantity: extractedData.quantity ?? f.quantity,
+          bought_at: extractedData.bought_at ?? f.bought_at,
+          type: extractedData.type ?? f.type,
+        }));
+        if (extractedData.type) setManualType(true); // treat extracted type as final, not overridden by AI suggestion
+      }
+
+      if (extractionFailed) {
+        // receipt uploaded, but extraction failed — let user fill manually
+      }
+    }
+  };
+
+  const clearReceipt = () => {
+    setReceiptFile(null);
+    setReceiptKey(null);
+    dispatch(clearReceiptExtraction());
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
+  const switchMode = (mode: 'manual' | 'auto') => {
+    setEntryMode(mode);
+    if (mode === 'manual') {
+      clearReceipt();
+    }
+  };
 
   useEffect(() => {
     if (suggestCategory && !manualType) {
@@ -366,7 +421,10 @@ function ExpenseForm() {
   }, [suggestCategory]);
 
   useEffect(() => {
-    return () => { dispatch(clearSuggestion()); };
+    return () => {
+      dispatch(clearSuggestion());
+      dispatch(clearReceiptExtraction());
+    };
   }, []);
   const set = <K extends keyof FormState>(key: K, val: FormState[K]) =>
     setForm((f) => ({ ...f, [key]: val }));
@@ -412,7 +470,9 @@ function ExpenseForm() {
       quantity: form.quantity,
       bought_at: new Date(`${form.bought_at}T00:00:00`).toISOString(),
       ...(form.groupId ? { groupId: form.groupId } : {}),
+      ...(receiptKey ? { receiptKey } : {}),
     };
+
     try {
       await dispatch(addExpense(payload)).unwrap();
       setSuccess(true);
@@ -460,6 +520,120 @@ function ExpenseForm() {
           Every field except Group ID is required.
         </p>
       </div>
+      {/* Mode toggle */}
+      <div className="flex gap-2 mb-5 p-1 rounded-xl bg-slate-100 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/60">
+        <button
+          type="button"
+          onClick={() => switchMode('manual')}
+          className={cn(
+            'flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-[12px] font-medium transition-colors',
+            entryMode === 'manual'
+              ? 'bg-white dark:bg-slate-900 text-violet-700 dark:text-violet-300 shadow-sm'
+              : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200',
+          )}
+        >
+          <Tag size={13} />
+          Manual entry
+        </button>
+        <button
+          type="button"
+          onClick={() => switchMode('auto')}
+          className={cn(
+            'flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-[12px] font-medium transition-colors',
+            entryMode === 'auto'
+              ? 'bg-white dark:bg-slate-900 text-violet-700 dark:text-violet-300 shadow-sm'
+              : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200',
+          )}
+        >
+          <ScanLine size={13} />
+          Auto-fill from receipt
+        </button>
+      </div>
+
+      {/* Receipt upload panel — only shown in auto mode */}
+      {entryMode === 'auto' && (
+        <div className="mb-5">
+          {!receiptFile ? (
+            <label
+              htmlFor="receipt-upload"
+              className={cn(
+                'flex flex-col items-center justify-center gap-2 px-4 py-8 rounded-xl border-2 border-dashed cursor-pointer transition-colors',
+                'border-slate-300 dark:border-slate-700 hover:border-violet-400 dark:hover:border-violet-500',
+                'bg-slate-50 dark:bg-slate-800/40',
+              )}
+            >
+              <div className="w-10 h-10 rounded-full bg-violet-100 dark:bg-violet-900/30 flex items-center justify-center">
+                <Upload size={16} className="text-violet-600 dark:text-violet-400" />
+              </div>
+              <p className="text-[12px] font-medium text-slate-700 dark:text-slate-300">
+                Upload a receipt image or PDF
+              </p>
+              <p className="text-[10px] text-slate-400 dark:text-slate-500">
+                We'll extract the details automatically — you can still edit before saving
+              </p>
+              <input
+                id="receipt-upload"
+                ref={fileInputRef}
+                type="file"
+                accept="image/png,image/jpeg,image/jpg,image/webp,application/pdf"
+                className="hidden"
+                onChange={handleReceiptSelect}
+                disabled={receiptExtraction.loading || loading}
+              />
+            </label>
+          ) : (
+            <div className="flex items-center gap-3 px-3.5 py-3 rounded-xl border border-slate-200 dark:border-slate-700/70 bg-white dark:bg-slate-900">
+              <div className="w-8 h-8 rounded-lg bg-violet-100 dark:bg-violet-900/30 flex items-center justify-center flex-shrink-0">
+                <FileText size={14} className="text-violet-600 dark:text-violet-400" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-[12px] font-medium text-slate-800 dark:text-slate-200 truncate">
+                  {receiptFile.name}
+                </p>
+                {receiptExtraction.loading && (
+                  <span className="flex items-center gap-1 text-[10px] text-violet-500 dark:text-violet-400 mt-0.5">
+                    <Loader2 size={10} className="animate-spin" />
+                    Extracting details…
+                  </span>
+                )}
+                {!receiptExtraction.loading && receiptExtraction.extractedData && !receiptExtraction.extractionFailed && (
+                  <span className="flex items-center gap-1 text-[10px] text-emerald-500 dark:text-emerald-400 mt-0.5">
+                    <CheckCircle2 size={10} />
+                    Fields auto-filled below — review before saving
+                  </span>
+                )}
+                {!receiptExtraction.loading && receiptExtraction.extractionFailed && (
+                  <span className="flex items-center gap-1 text-[10px] text-amber-500 dark:text-amber-400 mt-0.5">
+                    <AlertTriangle size={10} />
+                    Couldn't read this receipt — please fill in manually
+                  </span>
+                )}
+                {!receiptExtraction.loading && receiptExtraction.extractedData?.confidence === 'low' && !receiptExtraction.extractionFailed && (
+                  <span className="flex items-center gap-1 text-[10px] text-amber-500 dark:text-amber-400 mt-0.5">
+                    <AlertTriangle size={10} />
+                    Low confidence — please double-check the details
+                  </span>
+                )}
+              </div>
+              <button
+                type="button"
+                onClick={clearReceipt}
+                disabled={receiptExtraction.loading}
+                className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors flex-shrink-0 disabled:opacity-40"
+              >
+                <X size={14} />
+              </button>
+            </div>
+          )}
+
+          {receiptExtraction.error && (
+            <p className="text-[11px] text-red-600 dark:text-red-400 mt-2 flex items-center gap-1">
+              <AlertTriangle size={11} />
+              {receiptExtraction.error}
+            </p>
+          )}
+        </div>
+      )}
 
       {/* API error banner */}
       {storeError && (

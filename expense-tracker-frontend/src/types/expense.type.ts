@@ -46,6 +46,21 @@ export interface Expense {
     updatedAt?: string;
 }
 
+export interface ExtractedReceiptData {
+    name: string | null;
+    amount: number | null;
+    quantity: string | null;
+    bought_at: string | null;
+    type: ExpenseTypes | null;
+    confidence: "high" | "medium" | "low";
+}
+export interface ExtractReceiptResponse {
+    success: boolean;
+    receiptKey: string;
+    receiptUrl: string;
+    extractedData: ExtractedReceiptData | null;
+    extractionFailed: boolean;
+}
 export interface ExpenseStates {
     expenses: Expense[];
     activeAccountId: string | null;
@@ -53,6 +68,14 @@ export interface ExpenseStates {
     suggestCategory: string | null;
     categoryLoading: boolean;
     loading: boolean;
+    receiptExtraction: {
+        loading: boolean;
+        error: string | null;
+        extractedData: ExtractedReceiptData | null;
+        receiptKey: string | null;
+        receiptUrl: string | null;
+        extractionFailed: boolean;
+    };
     error: string | null;
     success: boolean;
 }

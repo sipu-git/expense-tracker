@@ -8,6 +8,7 @@ import { formatCurrency, formatDate, cn } from '../../utils';
 import { useNavigate } from 'react-router-dom';
 import { format, subMonths } from 'date-fns';
 import { CATEGORIES, CATEGORY_COLORS, CATEGORY_ICONS, ExpenseTypes } from '@/types/expense.type';
+import { viewExpenses } from '@/store/slices/expenseSlice/expenses.slice';
 
 export default function ExpensesList() {
   const dispatch = useAppDispatch();
@@ -16,16 +17,17 @@ export default function ExpensesList() {
   const [selectedCats, setSelectedCats] = useState<ExpenseTypes[]>([]);
   const [showFilters, setShowFilters] = useState(false);
   const navigate = useNavigate();
-  const [selectMonth, setSelectMonth] = useState(format(new Date(), 'yyyy-MM'));
+  const [selectMonth, setSelectMonth] = useState('');
 
-  const monthOptions = useMemo(() => {
-    return Array.from({ length: 12 }, (_, i) => {
+ const monthOptions = useMemo(() => {
+    const months = Array.from({ length: 12 }, (_, i) => {
       const date = subMonths(new Date(), i);
       return {
         value: format(date, 'yyyy-MM'),
         label: format(date, 'MMMM yyyy'),
       };
     });
+    return [{ value: '', label: 'View All' }, ...months];
   }, []);
 
   const applyFilters = (s: string, cats: ExpenseTypes[], month: string) => {
@@ -56,10 +58,10 @@ export default function ExpensesList() {
     dispatch(clearFilters());
   };
 
-  useEffect(() => {
-    applyFilters(search, selectedCats, selectMonth);
+ useEffect(() => {
+    dispatch(viewExpenses()); 
+    dispatch(clearFilters());
   }, []);
-
   const totalExpenses = groups.reduce((s, g) => s + g.expenses.length, 0);
 
   return (
