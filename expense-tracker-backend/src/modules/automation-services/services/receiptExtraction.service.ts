@@ -1,5 +1,5 @@
 import { ConverseCommand } from "@aws-sdk/client-bedrock-runtime";
-import { bedRockClient, MODEL_ID } from "../../../shared/configs/genAi.config";
+import { bedRockClient, MODEL_ID } from "../../../shared/configs/genAi.config.js";
 
 const VALID_EXPENSE_TYPES = [
     "FOOD",

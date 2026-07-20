@@ -1,6 +1,6 @@
 import { ConverseCommand } from "@aws-sdk/client-bedrock-runtime";
-import { bedRockClient, MODEL_ID } from "../../../shared/configs/genAi.config";
-import { ExpenseType } from "../../../../generated/prisma";
+import { bedRockClient, MODEL_ID } from "../../../shared/configs/genAi.config.js";
+import { ExpenseType } from "../../../../generated/prisma/index.js";
 
 export async function categorizeExpense(
     name: string,

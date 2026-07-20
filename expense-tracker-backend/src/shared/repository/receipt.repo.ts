@@ -1,6 +1,6 @@
 import { DeleteObjectCommand, PutObjectCommand } from "@aws-sdk/client-s3";
-import { generateImageUrl } from "../util/bucket.util";
-import { s3 } from "../configs/s3.config";
+import { generateImageUrl } from "../util/bucket.util.js";
+import { s3 } from "../configs/s3.config.js";
 
 const ALLOWED_TYPES = ["image/png", "image/jpeg", "image/jpg", "image/webp", "application/pdf"];
 
