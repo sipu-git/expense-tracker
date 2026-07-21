@@ -163,7 +163,6 @@ const userSlice = createSlice({
         builder
             .addCase(viewProfile.pending, (state) => {
                 state.loading = true;
-                state.hydrating = true;
                 state.error = null;
             })
             .addCase(viewProfile.fulfilled, (state, action) => {

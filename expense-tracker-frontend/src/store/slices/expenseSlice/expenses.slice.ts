@@ -340,7 +340,7 @@ export const expenseSlice = createSlice({
                 state.loading = false;
                 state.success = true;
                 state.expenseDetail = null;
-                state.expenses = action.payload.data;
+                state.expenses = [];
                 state.error = null;
             })
             .addCase(deleteAllExpenses.rejected, (state, action) => {

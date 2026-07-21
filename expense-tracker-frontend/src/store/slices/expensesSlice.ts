@@ -82,7 +82,7 @@ export const updateExpense = updateExpenseThunk;
 export const resetToSampleData = viewExpensesThunk;
 export const removeAll = deleteAllExpensesThunk;
 
-const selectApiExpenses = (state: RootState) => state.expense.expenses;
+const selectApiExpenses = (state: RootState) => state.expense.expenses ?? [];
 const selectFilters = (state: RootState) => state.expenses.filters;
 
 export const selectAllExpenses = createSelector(selectApiExpenses, (items) =>

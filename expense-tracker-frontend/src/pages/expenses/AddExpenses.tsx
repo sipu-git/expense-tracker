@@ -868,7 +868,7 @@ export default function AddExpensePage() {
           )}
         >
           {/* LEFT — onboarding content */}
-          <div className="px-8 py-9 bg-slate-50 dark:bg-slate-900/60 overflow-y-auto max-h-screen lg:max-h-[88vh]">
+          <div className="px-8 py-9 bg-slate-50 dark:bg-slate-900/60 overflow-y-auto max-h-screen lg:max-h-[88vh] lg:block hidden">
             <LeftPanel />
           </div>
 
