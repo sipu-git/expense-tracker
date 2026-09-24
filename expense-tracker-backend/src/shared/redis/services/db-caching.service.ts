@@ -1,6 +1,7 @@
 import redis from "../redis.config.js";
 
 class RedisService {
+
     async get<T>(key: string): Promise<T | null> {
         const data = await redis.get(key);
         return data ? JSON.parse(data) : null;

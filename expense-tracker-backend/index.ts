@@ -1,4 +1,4 @@
-import exxpress from "express";
+import express from "express";
 import dotenv from "dotenv";
 import cors from "cors";
 import userRoutes from "./src/modules/user-service/user.routes.js";
@@ -9,10 +9,18 @@ import authRoutes from './src/modules/auth-service/auth.routes.js';
 import automationRoutes from './src/modules/automation-services/automation.routes.js';
 import cookiesParser from "cookie-parser";
 import { globalErrorHandler } from "./src/shared/middlewares/error.middleware.js";
+import helmet from "helmet";
 dotenv.config();
 
-const app = exxpress();
-app.use(exxpress.json());
+const app = express();
+app.set('trust proxy', 1);
+
+app.use(helmet({
+    crossOriginResourcePolicy: {
+        policy: "cross-origin"
+    }
+}));
+
 app.use(
     cors({
         origin: ["http://localhost:5173", "http://localhost:3000", "https://expense-tracker-steel-delta-33.vercel.app", "https://expense-tracker-1-6m9p.onrender.com"],
@@ -20,10 +28,22 @@ app.use(
         methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
         allowedHeaders: ["Content-Type", "Authorization", "x-active-account-id", "Cache-Control", "Pragma"],
     })
-); app.use(cookiesParser());
+);
 
-app.get("/health", (req, res) => {
-    res.status(200).send("ok");
+app.use(express.json({
+    verify: (req: any, _res, buf) => {
+        req.rawBody = buf
+    }
+}));
+
+app.use(cookiesParser());
+
+app.get('/', (_req, res) => {
+    res.status(200).json({
+        status: 'ok',
+        service: 'crm-platform-backend',
+        timestamp: new Date().toISOString()
+    });
 });
 
 app.use("/api", (req, res, next) => {
@@ -36,7 +56,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/group", groupRoutes);
 app.use("/api/expenses", expenseRoutes);
 app.use("/api/budgets", budgetRoutes);
-app.use("/api/automation",automationRoutes)
+app.use("/api/automation", automationRoutes)
 
 app.use(globalErrorHandler)
 
