@@ -1,5 +1,5 @@
 import { AppError } from "../../../../lib/AppError.js";
-import redis from "../redis.config.js";
+import redis, { ensureRedisConnected } from "../redis.config.js";
 
 const otp_expiry = 600;
 const otp_rate_limit = 300;
@@ -15,6 +15,7 @@ interface OtpData {
 
 export async function storeOtp(email: string, otp: string, type: 'FORGOT_PASSWORD' | 'CHANGE_PASSWORD'): Promise<boolean> {
   try {
+    await ensureRedisConnected();
     const key = `OTP:${type}:${email}`;
     const otpData: OtpData = {
       otp, email, type,
@@ -32,6 +33,7 @@ export async function storeOtp(email: string, otp: string, type: 'FORGOT_PASSWOR
 
 export async function verfiyOtp(email: string, otp: string, type: 'FORGOT_PASSWORD' | 'CHANGE_PASSWORD'): Promise<{ isValid: boolean; data?: OtpData }> {
   try {
+    await ensureRedisConnected();
     const key = `OTP:${type}:${email}`;
     const otpData = await redis.get(key)
     if (!otpData) {
@@ -61,6 +63,7 @@ export async function deleteOTP(
   type: 'FORGOT_PASSWORD' | 'CHANGE_PASSWORD'
 ): Promise<boolean> {
   try {
+    await ensureRedisConnected();
     const key = `OTP:${type}:${email}`;
     await redis.del(key);
     console.log(`OTP deleted from Redis for ${email} (${type})`);
@@ -73,6 +76,7 @@ export async function deleteOTP(
 
 export async function checkRateLimit(email: string): Promise<boolean> {
   try {
+    await ensureRedisConnected();
     const key = `OTP:ATTEMPTS:${email}`;
     const attempts = await redis.incr(key)
 

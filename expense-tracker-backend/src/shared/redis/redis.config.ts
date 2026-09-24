@@ -36,7 +36,17 @@ async function connectRedis() {
         console.error("Failed to connect Redis:", error);
     }
 }
-connectRedis()
+connectRedis();
+
+export async function ensureRedisConnected() {
+    if (!redis.isOpen) {
+        try {
+            await redis.connect();
+        } catch (error) {
+            console.error("Failed to reconnect Redis:", error);
+        }
+    }
+}
 
 export default redis;
 
