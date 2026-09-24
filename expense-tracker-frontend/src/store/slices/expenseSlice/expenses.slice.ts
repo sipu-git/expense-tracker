@@ -5,9 +5,6 @@ import { handleApiError } from "@/utils/apiError";
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import { switchAccount } from "../accountSlices/account.slice";
 
-// const SUGGEST_CATEGORY = "https://expense-tracker-1-6m9p.onrender.com/api/automation/suggest-category"; 
-const SUGGEST_CATEGORY = "https://expense-tracker-1-6m9p.onrender.com/api/automation/suggest-category";
-
 const initialStates: ExpenseStates = {
     expenses: [],
     activeAccountId: null,
@@ -31,16 +28,11 @@ export const suggestExpenseCategory = createAsyncThunk(
     "expense/suggestCategory",
     async ({ name, amount }: { name: string; amount: number }, { rejectWithValue }) => {
         try {
-            const res = await fetch(SUGGEST_CATEGORY, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                credentials: "include",
-                body: JSON.stringify({ name, amount }),
-            }); const data = await res.json();
-            if (!data.success) throw new Error(data.message);
-            return data.type as string;
+            const response = await expenseApis.suggestCategory({ name, amount });
+            if (!response.data.success) throw new Error(response.data.message);
+            return response.data.type as string;
         } catch (error: any) {
-            return rejectWithValue(error.message);
+            return rejectWithValue(handleApiError(error));
         }
     }
 );

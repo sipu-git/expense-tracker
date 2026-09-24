@@ -18,5 +18,8 @@ export const expenseApis = {
     removeAllExpense: () => api.delete(`${subUrl}/delete-all-expenses`),
 
     filterExpense: (filter: "day" | "month" | "year" = "month", groupId?: string) =>
-        api.get(`${subUrl}/filter-expense`, { params: { filter, ...(groupId ? { groupId } : {}) } })
+        api.get(`${subUrl}/filter-expense`, { params: { filter, ...(groupId ? { groupId } : {}) } }),
+
+    suggestCategory: (data: { name: string; amount: number }) =>
+        api.post("/automation/suggest-category", data)
 }
