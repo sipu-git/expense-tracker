@@ -6,7 +6,7 @@ import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import { switchAccount } from "../accountSlices/account.slice";
 
 // const SUGGEST_CATEGORY = "https://expense-tracker-1-6m9p.onrender.com/api/automation/suggest-category"; 
-const SUGGEST_CATEGORY = "http://localhost:3000/api/automation/suggest-category";
+const SUGGEST_CATEGORY = "https://expense-tracker-1-6m9p.onrender.com/api/automation/suggest-category";
 
 const initialStates: ExpenseStates = {
     expenses: [],
